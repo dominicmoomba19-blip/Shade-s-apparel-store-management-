@@ -778,6 +778,7 @@ tbody td { padding: 12px 16px; color: var(--text); font-size: 13.5px; }
         <div class="kpi-grid" id="kpi-grid"></div>
         <div class="charts-row" style="grid-template-columns:2fr 1fr" id="charts-row1"></div>
         <div class="charts-row" style="grid-template-columns:1fr 1fr" id="charts-row2"></div>
+        <div class="charts-row" style="grid-template-columns:1fr 1fr" id="charts-row3"></div>
       </div>
 
       <!-- SALES -->
@@ -1045,6 +1046,54 @@ function renderDashboard() {
   // Top products bars
   const maxVal = topProds[0]?.[1]||1;
   const barColors = ['#3b82f6','#8b5cf6','#06b6d4','#10b981','#f59e0b'];
+
+  // Row 3 — Best day of week + Returns trend
+  document.getElementById('charts-row3').innerHTML = `
+    <div class="chart-card">
+      <div class="chart-title">Best Day of the Week</div>
+      <div class="chart-wrap" style="height:200px"><canvas id="chart-dayofweek"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Returns Trend — Last 6 Months</div>
+      <div class="chart-wrap" style="height:200px"><canvas id="chart-returns-trend"></canvas></div>
+    </div>
+  `;
+
+  // Best day of week
+  const dowLabels = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const dowTotals = [0,0,0,0,0,0,0];
+  state.sales.filter(s=>s.status==='completed').forEach(s=>{
+    const d = new Date(s.date);
+    if (!isNaN(d)) dowTotals[d.getDay()] += s.amount||0;
+  });
+  const dowColors = dowTotals.map((v,i)=> v===Math.max(...dowTotals) ? '#f59e0b' : (isDark()?'rgba(59,130,246,0.6)':'rgba(59,130,246,0.5)'));
+  destroyChart('dayofweek');
+  const ctx4 = document.getElementById('chart-dayofweek').getContext('2d');
+  state.charts['dayofweek'] = new Chart(ctx4,{type:'bar',data:{labels:dowLabels,datasets:[{label:'Sales',data:dowTotals,backgroundColor:dowColors,borderRadius:6,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{backgroundColor:cd.bg,titleColor:isDark()?'#e8edf5':'#0f172a',bodyColor:cd.text,borderColor:'#1e2d45',borderWidth:1,callbacks:{label:c=>`K${c.parsed.y.toFixed(2)}`}}},scales:sharedAxes}});
+
+  // Returns trend — last 6 months
+  const retMap = {};
+  state.returns.forEach(r=>{
+    const d = new Date(r.date||r.createdAt);
+    if (!isNaN(d)) {
+      const key = d.toLocaleDateString('en-US',{month:'short',year:'2-digit'});
+      retMap[key] = (retMap[key]||0) + (r.refund||0);
+    }
+  });
+  // Build last 6 months labels
+  const retLabels = []; const retVals = [];
+  for (let i=5;i>=0;i--) {
+    const d2 = new Date(); d2.setMonth(d2.getMonth()-i);
+    const lbl = d2.toLocaleDateString('en-US',{month:'short',year:'2-digit'});
+    retLabels.push(lbl);
+    retVals.push(retMap[lbl]||0);
+  }
+  const gradRet = document.getElementById('chart-returns-trend').getContext('2d').createLinearGradient(0,0,0,200);
+  gradRet.addColorStop(0,'rgba(244,63,94,0.35)'); gradRet.addColorStop(1,'rgba(244,63,94,0)');
+  destroyChart('returns-trend');
+  const ctx5 = document.getElementById('chart-returns-trend').getContext('2d');
+  state.charts['returns-trend'] = new Chart(ctx5,{type:'line',data:{labels:retLabels,datasets:[{label:'Refunds',data:retVals,borderColor:'#f43f5e',backgroundColor:gradRet,fill:true,tension:0.4,borderWidth:2,pointRadius:3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{backgroundColor:cd.bg,titleColor:isDark()?'#e8edf5':'#0f172a',bodyColor:cd.text,borderColor:'#1e2d45',borderWidth:1,callbacks:{label:c=>`K${c.parsed.y.toFixed(2)}`}}},scales:sharedAxes}});
+
   document.getElementById('top-prods').innerHTML = topProds.map(([name,val],i)=>`
     <div style="margin-bottom:12px">
       <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">
@@ -1791,12 +1840,19 @@ function renderSettings() {
         How to use on other devices
       </div>
       <div class="settings-card-desc">
-        1. Send this HTML file to your other phone (WhatsApp, email, etc.)<br>
-        2. Open it in Chrome on that device<br>
-        3. Data syncs automatically when both devices are online
+        <strong style="color:var(--text)">📊 Recording data</strong><br>
+        Use the bottom nav to switch between Sales, Expenses and Returns. Tap the <strong>+</strong> button on each section to add a record. Fill in the details and tap Save.<br><br>
+        <strong style="color:var(--text)">✏️ Editing or deleting</strong><br>
+        Tap the ✏️ or 🗑️ icon on any record. You will be asked for your edit/delete password before any changes are made.<br><br>
+        <strong style="color:var(--text)">📱 Installing the app</strong><br>
+        Open in Chrome → tap the 3-dot menu → <strong>Add to Home Screen</strong>. The app will appear on your home screen like a normal app and works offline.<br><br>
+        <strong style="color:var(--text)">🔄 Using on multiple devices</strong><br>
+        The app syncs via Firebase. Open it on any phone in Chrome and your data will appear automatically when online.<br><br>
+        <strong style="color:var(--text)">📈 Reports</strong><br>
+        Go to the Reports section and enter your PIN to view profit/loss summaries and export data.
       </div>
       <div style="font-size:11px;color:var(--muted);padding:8px 10px;background:var(--card2);border-radius:8px;line-height:1.5">
-        💡 For the best experience, add to home screen: Chrome menu → Add to Home Screen
+        💡 Tip: Use the Search bar at the top to quickly find any record across all sections.
       </div>
     </div>
 
