@@ -1363,7 +1363,7 @@ function openModal(type) {
   if (type==='sale') {
     titleEl.textContent = '📦 Record New Sale';
     bodyEl.innerHTML = `
-      <div class="form-group"><label class="form-label">Product Name</label><input class="form-input" id="f-product" placeholder="e.g. Rice (25kg)" oninput="calcTotal()"/></div>
+      <div class="form-group"><label class="form-label">Product Name</label><input class="form-input" id="f-product" placeholder="e.g. Denim Jacket (M)" oninput="calcTotal()"/></div>
       <div class="form-row">
         <div class="form-group"><label class="form-label">Quantity</label><input class="form-input" id="f-qty" type="number" min="1" value="1" oninput="calcTotal()"/></div>
         <div class="form-group"><label class="form-label">Unit Price (K)</label><input class="form-input" id="f-price" type="number" step="0.01" min="0" placeholder="0.00" oninput="calcTotal()"/></div>
