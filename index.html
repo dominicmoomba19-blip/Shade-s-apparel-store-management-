@@ -1597,7 +1597,16 @@ window.addEventListener('offline', () => { renderSettings(); showToast('You are 
 // ═══════════════════════════════════════════════════════════
 //  DELETE / EDIT / UPDATE RECORDS
 // ═══════════════════════════════════════════════════════════
+
+function requirePin(action) {
+  var pin = prompt('Enter password to continue:');
+  if (pin === null) return; // cancelled
+  if (pin !== '1245') { showToast('Incorrect password','info'); return; }
+  action();
+}
+
 async function deleteRecord(coll, id) {
+  requirePin(async function() {
   if (!confirm('Delete this record? This cannot be undone.')) return;
   const idx = state[coll].findIndex(r=>r.id===id);
   if (idx !== -1) state[coll].splice(idx,1);
@@ -1609,9 +1618,11 @@ async function deleteRecord(coll, id) {
   showToast('Record deleted','info');
   renderNotifications();
   renderSection(getCurrentSection());
+  }); // end requirePin
 }
 
 function editRecord(coll, id) {
+  requirePin(function() {
   const rec = state[coll].find(r=>r.id===id);
   if (!rec) return;
   const overlay = document.getElementById('modal-overlay');
