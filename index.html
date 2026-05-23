@@ -47,7 +47,7 @@ setTimeout(() => {
 <script type="module">
 import { initializeApp }    from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getFirestore, collection, addDoc, getDocs, query, orderBy,
-         onSnapshot, serverTimestamp, deleteDoc, updateDoc, doc }
+         onSnapshot, serverTimestamp, deleteDoc, updateDoc, doc, setDoc }
   from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -66,7 +66,7 @@ try {
   window._db   = db;
   window._DEMO = false;
   window._fs   = { collection, addDoc, getDocs, query, orderBy, onSnapshot,
-                   serverTimestamp, deleteDoc, updateDoc, doc };
+                   serverTimestamp, deleteDoc, updateDoc, doc, setDoc };
 } catch(e) {
   window._DEMO = true;
 }
@@ -175,21 +175,95 @@ button { font-family: var(--font-body); cursor: pointer; }
 }
 .logo-sub { font-size: 11px; color: var(--muted); margin-top: 2px; letter-spacing: 0.2px; }
 
-.role-toggle {
-  margin: 6px 14px 10px;
-  background: var(--card); border: 1px solid var(--border);
-  border-radius: 10px; padding: 4px; display: flex; gap: 4px;
+.role-toggle { display:none; } /* replaced by real login */
+
+/* ── LOGIN SCREEN ── */
+#login-screen {
+  position:fixed; inset:0; z-index:9999;
+  background:var(--bg);
+  display:flex; align-items:center; justify-content:center;
+  flex-direction:column;
+  background-image:
+    radial-gradient(ellipse 70% 50% at 20% 10%, rgba(79,142,247,0.09) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 80% 90%, rgba(166,108,255,0.07) 0%, transparent 60%);
 }
-.role-btn {
-  flex: 1; padding: 7px; border-radius: 7px; border: none; cursor: pointer;
-  font-size: 12px; font-weight: 600; transition: all 0.2s;
-  background: transparent; color: var(--muted);
+.login-card {
+  background:var(--card); border:1px solid var(--border); border-radius:20px;
+  padding:36px 32px 28px; width:min(360px,90vw);
+  box-shadow:0 24px 80px rgba(0,0,0,0.5);
 }
-.role-btn.active {
-  background: linear-gradient(135deg, #4f8ef7 0%, #7c6ff7 100%);
-  color: #fff;
-  box-shadow: 0 2px 10px rgba(79,142,247,0.4);
+.login-logo {
+  display:flex; align-items:center; gap:12px; margin-bottom:28px;
 }
+.login-logo-icon {
+  width:44px; height:44px; border-radius:13px;
+  background:linear-gradient(135deg,#4f8ef7,#a66cff);
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:0 4px 18px rgba(79,142,247,0.45);
+}
+.login-logo-text { font-family:var(--font-head); font-size:20px; font-weight:800;
+  background:linear-gradient(90deg,#4f8ef7,#a66cff);
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+.login-logo-sub { font-size:11px; color:var(--muted); margin-top:1px; }
+
+.login-role-tabs { display:flex; gap:6px; margin-bottom:24px; }
+.login-role-tab {
+  flex:1; padding:11px; border-radius:11px; border:1px solid var(--border);
+  background:transparent; color:var(--muted); font-size:13px; font-weight:700;
+  cursor:pointer; transition:all 0.2s; font-family:var(--font-body);
+  display:flex; flex-direction:column; align-items:center; gap:4px;
+}
+.login-role-tab .tab-icon { font-size:20px; }
+.login-role-tab.active {
+  background:linear-gradient(135deg,rgba(79,142,247,0.15),rgba(166,108,255,0.1));
+  border-color:var(--accent); color:var(--accent);
+  box-shadow:0 0 0 1px rgba(79,142,247,0.2);
+}
+.login-role-tab:hover:not(.active) { border-color:var(--muted); color:var(--text); }
+
+.login-pin-label { font-size:12px; color:var(--muted); font-weight:600; margin-bottom:12px; text-transform:uppercase; letter-spacing:0.4px; }
+.login-dots { display:flex; gap:10px; justify-content:center; margin-bottom:20px; }
+.login-dot {
+  width:13px; height:13px; border-radius:50%;
+  border:2px solid var(--border); background:transparent; transition:all 0.15s;
+}
+.login-dot.filled { background:var(--accent); border-color:var(--accent); box-shadow:0 0 8px rgba(79,142,247,0.5); }
+.login-dot.error  { background:var(--red);    border-color:var(--red);    box-shadow:0 0 8px rgba(245,54,92,0.5); }
+
+.login-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:10px; }
+.login-key {
+  padding:14px; border-radius:11px; border:1px solid var(--border);
+  background:var(--card2); color:var(--text); font-size:18px; font-weight:700;
+  cursor:pointer; transition:all 0.15s; font-family:var(--font-head);
+  text-align:center;
+}
+.login-key:hover { border-color:var(--accent); color:var(--accent); background:rgba(79,142,247,0.08); transform:scale(0.97); }
+.login-key:active { transform:scale(0.93); }
+.login-key.wide { grid-column:span 2; }
+.login-key.del  { background:rgba(245,54,92,0.06); border-color:rgba(245,54,92,0.2); color:var(--red); }
+.login-error { text-align:center; font-size:12.5px; color:var(--red); font-weight:600; min-height:18px; margin-bottom:4px; }
+.login-hint { text-align:center; font-size:11px; color:var(--muted); margin-top:12px; }
+
+/* ── STAFF BODY-LEVEL RESTRICTIONS ── */
+body.is-staff .action-btn.edit,
+body.is-staff .action-btn.del,
+body.is-staff #section-inventory .inv-card-actions .action-btn { display:none !important; }
+body.is-staff #section-inventory .inv-restock-btn { display:none !important; }
+body.is-staff #section-inventory .btn-primary { display:none !important; }
+body.is-staff #section-settings { display:none !important; }
+body.is-staff #section-reports  { display:none !important; }
+.staff-readonly .action-btn { display:none !important; }
+.staff-readonly .btn-primary[onclick*="openModal"] { display:none !important; }
+
+/* ── SESSION BAR (staff mode indicator) ── */
+#session-bar {
+  display:none; background:linear-gradient(90deg,rgba(255,184,48,0.1),rgba(255,184,48,0.04));
+  border-bottom:1px solid rgba(255,184,48,0.2);
+  padding:6px 20px; font-size:11.5px; color:var(--yellow);
+  font-weight:600; letter-spacing:0.2px;
+  align-items:center; justify-content:space-between;
+}
+#session-bar.visible { display:flex; }
 
 nav { padding: 8px 12px; flex: 1; }
 .nav-item {
@@ -262,8 +336,8 @@ nav { padding: 8px 12px; flex: 1; }
 #notif-bar {
   background: linear-gradient(90deg, rgba(255,184,48,0.07), rgba(255,184,48,0.03));
   border-bottom: 1px solid rgba(255,184,48,0.18);
-  padding: 8px 24px; display: flex; gap: 20px; overflow-x: auto;
-  font-size: 12px; color: var(--yellow); white-space: nowrap;
+  padding: 8px 16px; display: flex; align-items: center; gap: 8px; overflow-x: auto;
+  font-size: 12px; color: var(--yellow); flex-wrap: nowrap;
 }
 #notif-bar:empty { display: none; }
 
@@ -509,6 +583,7 @@ tbody td { padding: 12px 16px; color: var(--text); font-size: 13.5px; }
   #content { padding: 14px; }
   .topbar-right { gap: 5px; }
   #search-input { width: 110px; }
+  #date-from, #date-to { display: none; }
 }
 @media (max-width: 480px) {
   .kpi-grid { grid-template-columns: 1fr; }
@@ -620,6 +695,48 @@ tbody td { padding: 12px 16px; color: var(--text); font-size: 13.5px; }
 .chart-tab.active { background:rgba(79,142,247,0.15); color:var(--accent); border-color:rgba(79,142,247,0.35); }
 .chart-tab:hover:not(.active) { border-color:var(--muted); color:var(--text); }
 
+/* ── INVENTORY ── */
+.inv-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:14px; margin-top:16px; }
+.inv-card {
+  background:var(--card); border:1px solid var(--border); border-radius:var(--radius);
+  padding:18px 18px 14px; position:relative; overflow:hidden;
+  transition:transform 0.18s, box-shadow 0.18s;
+  animation: fadeUp 0.35s cubic-bezier(0.22,0.61,0.36,1) both;
+}
+.inv-card:hover { transform:translateY(-3px); box-shadow:0 8px 28px rgba(0,0,0,0.25); }
+.inv-card-top { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px; }
+.inv-card-name { font-family:var(--font-head); font-size:15px; font-weight:700; color:var(--text); line-height:1.3; flex:1; min-width:0; }
+.inv-card-cat { font-size:10.5px; color:var(--muted); margin-top:3px; font-weight:600; text-transform:uppercase; letter-spacing:0.4px; }
+.inv-stock-big { font-family:var(--font-head); font-size:34px; font-weight:800; line-height:1; margin:8px 0 4px; }
+.inv-stock-lbl { font-size:11px; color:var(--muted); font-weight:600; letter-spacing:0.3px; }
+.inv-card-prices { display:flex; gap:10px; margin-top:10px; padding-top:10px; border-top:1px solid var(--border); }
+.inv-price-box { flex:1; }
+.inv-price-label { font-size:10px; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:0.3px; }
+.inv-price-val { font-family:var(--font-head); font-size:14px; font-weight:700; margin-top:2px; }
+.inv-card-actions { display:flex; gap:6px; margin-top:12px; }
+.inv-card-actions .action-btn { flex:1; justify-content:center; }
+.stock-bar-wrap { height:4px; background:var(--border); border-radius:2px; margin:8px 0 4px; overflow:hidden; }
+.stock-bar-fill { height:100%; border-radius:2px; transition:width 0.4s ease; }
+.inv-low-badge { position:absolute; top:12px; right:12px; background:rgba(245,54,92,0.15); color:var(--red); border:1px solid rgba(245,54,92,0.3); border-radius:20px; font-size:10px; font-weight:700; padding:2px 8px; }
+.inv-out-badge { position:absolute; top:12px; right:12px; background:rgba(77,100,128,0.2); color:var(--muted); border:1px solid var(--border); border-radius:20px; font-size:10px; font-weight:700; padding:2px 8px; }
+.inv-filter-row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:16px; }
+.inv-filter-btn { padding:5px 14px; border-radius:20px; border:1px solid var(--border); background:transparent; color:var(--muted); font-size:12px; font-weight:600; cursor:pointer; transition:all 0.15s; font-family:var(--font-body); }
+.inv-filter-btn.active { background:rgba(79,142,247,0.15); color:var(--accent); border-color:rgba(79,142,247,0.35); }
+.inv-filter-btn:hover:not(.active) { color:var(--text); border-color:var(--muted); }
+.inv-restock-btn {
+  background:linear-gradient(135deg,#12d98c,#06b872); color:#fff;
+  border:none; border-radius:8px; padding:5px 12px; font-size:12px; font-weight:700;
+  cursor:pointer; transition:all 0.15s; font-family:var(--font-body);
+  box-shadow:0 2px 8px rgba(18,217,140,0.3);
+}
+.inv-restock-btn:hover { transform:translateY(-1px); box-shadow:0 4px 14px rgba(18,217,140,0.45); }
+.restock-log { background:var(--card2); border:1px solid var(--border); border-radius:10px; padding:10px 14px; margin-top:8px; font-size:12px; color:var(--muted); max-height:90px; overflow-y:auto; }
+.restock-log-item { padding:3px 0; border-bottom:1px solid var(--border); }
+.restock-log-item:last-child { border-bottom:none; }
+.inv-empty { text-align:center; padding:60px 20px; color:var(--muted); }
+.inv-empty-icon { font-size:48px; margin-bottom:12px; opacity:0.5; }
+.inv-summary-bar { display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:10px; margin-bottom:18px; }
+
 /* ── PRINT ── */
 @media print {
   #sidebar, #topbar, #notif-bar, #modal-overlay, #pin-overlay,
@@ -640,11 +757,27 @@ tbody td { padding: 12px 16px; color: var(--text); font-size: 13.5px; }
 </head>
 <body>
 
+<!-- LOADING OVERLAY -->
+<div id="loading-overlay" style="position:fixed;inset:0;z-index:9998;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;transition:opacity 0.4s">
+  <div style="width:44px;height:44px;border-radius:13px;background:linear-gradient(135deg,#4f8ef7,#a66cff);display:flex;align-items:center;justify-content:center;box-shadow:0 6px 24px rgba(79,142,247,0.4)">
+    <svg width="22" height="22" fill="none" stroke="#fff" stroke-width="2.2" viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+  </div>
+  <div style="display:flex;gap:6px">
+    <div class="loader-dot" style="width:8px;height:8px;border-radius:50%;background:var(--accent);animation:loaderBounce 1.1s infinite ease-in-out;animation-delay:0s"></div>
+    <div class="loader-dot" style="width:8px;height:8px;border-radius:50%;background:var(--accent);animation:loaderBounce 1.1s infinite ease-in-out;animation-delay:0.18s"></div>
+    <div class="loader-dot" style="width:8px;height:8px;border-radius:50%;background:var(--accent);animation:loaderBounce 1.1s infinite ease-in-out;animation-delay:0.36s"></div>
+  </div>
+  <div style="font-size:13px;color:var(--muted)">Connecting to cloud…</div>
+</div>
+<style>
+@keyframes loaderBounce { 0%,80%,100%{transform:scale(0.6);opacity:0.5} 40%{transform:scale(1);opacity:1} }
+</style>
+
 <!-- TOAST -->
 <div id="toast"></div>
 
 <!-- MODAL -->
-<div id="modal-overlay">
+<div id="modal-overlay" onclick="if(event.target===this)closeModal()">
   <div class="modal" id="modal-box">
     <div class="modal-head">
       <div class="modal-title" id="modal-title">Add Record</div>
@@ -686,6 +819,57 @@ tbody td { padding: 12px 16px; color: var(--text); font-size: 13.5px; }
   </div>
 </div>
 
+<!-- LOGIN SCREEN -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="login-logo-icon">
+        <svg width="22" height="22" fill="none" stroke="#fff" stroke-width="2.2" viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      </div>
+      <div>
+        <div class="login-logo-text">Shade's Apparel</div>
+        <div class="login-logo-sub">Retail Finance Manager</div>
+      </div>
+    </div>
+    <div class="login-role-tabs">
+      <button class="login-role-tab active" id="login-tab-owner" onclick="selectLoginRole('owner')">
+        <span class="tab-icon">👑</span>Owner
+      </button>
+      <button class="login-role-tab" id="login-tab-staff" onclick="selectLoginRole('staff')">
+        <span class="tab-icon">👤</span>Staff
+      </button>
+    </div>
+    <div class="login-pin-label" id="login-pin-label">Enter Owner PIN</div>
+    <div class="login-dots" id="login-dots">
+      <div class="login-dot" id="ld0"></div>
+      <div class="login-dot" id="ld1"></div>
+      <div class="login-dot" id="ld2"></div>
+      <div class="login-dot" id="ld3"></div>
+    </div>
+    <div class="login-error" id="login-error"></div>
+    <div class="login-grid">
+      <button class="login-key" onclick="loginKey('1')">1</button>
+      <button class="login-key" onclick="loginKey('2')">2</button>
+      <button class="login-key" onclick="loginKey('3')">3</button>
+      <button class="login-key" onclick="loginKey('4')">4</button>
+      <button class="login-key" onclick="loginKey('5')">5</button>
+      <button class="login-key" onclick="loginKey('6')">6</button>
+      <button class="login-key" onclick="loginKey('7')">7</button>
+      <button class="login-key" onclick="loginKey('8')">8</button>
+      <button class="login-key" onclick="loginKey('9')">9</button>
+      <button class="login-key wide" onclick="loginKey('0')">0</button>
+      <button class="login-key del" onclick="loginDel()">⌫</button>
+    </div>
+    <div class="login-hint" id="login-hint">Owner: full access &nbsp;·&nbsp; Staff: sales, expenses &amp; returns</div>
+  </div>
+</div>
+
+<!-- SESSION BAR -->
+<div id="session-bar">
+  <span id="session-bar-text">👤 Staff Mode — limited access</span>
+  <button onclick="doLogout()" style="background:rgba(255,184,48,0.15);border:1px solid rgba(255,184,48,0.3);color:var(--yellow);border-radius:8px;padding:3px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:var(--font-body)">Log Out</button>
+</div>
+
 <div id="sidebar-overlay" onclick="closeSidebar()"></div>
 
 <div id="app" style="display:flex">
@@ -715,11 +899,16 @@ tbody td { padding: 12px 16px; color: var(--text); font-size: 13.5px; }
         <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
         Returns
       </button>
-      <button class="nav-item" data-section="settings" onclick="navigate('settings',this)">
+      <button class="nav-item staff-hidden" data-section="inventory" onclick="navigate('inventory',this)">
+        <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+        Inventory
+        <span id="inv-low-badge" style="display:none;margin-left:auto;background:var(--red);color:#fff;border-radius:10px;font-size:10px;font-weight:700;padding:1px 7px"></span>
+      </button>
+      <button class="nav-item staff-hidden" data-section="settings" onclick="navigate('settings',this)">
         <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
         Settings
       </button>
-      <button class="nav-item" data-section="reports" id="nav-reports" onclick="navigate('reports',this)">
+      <button class="nav-item staff-hidden" data-section="reports" id="nav-reports" onclick="navigate('reports',this)">
         <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
         Reports
       </button>
@@ -729,9 +918,12 @@ tbody td { padding: 12px 16px; color: var(--text); font-size: 13.5px; }
         <div class="avatar" id="avatar-letter">S</div>
       </div>
       <div style="flex:1;min-width:0">
-        <div class="user-name" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Shade's Apparel</div>
-        <div class="user-role">Store Owner</div>
+        <div class="user-name" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="sidebar-username">Shade's Apparel</div>
+        <div class="user-role" id="sidebar-userrole">Store Owner</div>
       </div>
+      <button onclick="doLogout()" title="Log out" style="background:none;border:none;color:var(--muted);cursor:pointer;padding:4px;border-radius:6px;transition:color 0.15s" onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--muted)'">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      </button>
     </div>
   </aside>
 
@@ -759,6 +951,8 @@ tbody td { padding: 12px 16px; color: var(--text); font-size: 13.5px; }
           <option value="week">This week</option>
           <option value="month">This month</option>
         </select>
+        <input type="date" id="date-from" class="date-filter" style="width:130px;cursor:pointer" title="From date" onchange="onDateRange()" placeholder="From"/>
+        <input type="date" id="date-to" class="date-filter" style="width:130px;cursor:pointer" title="To date" onchange="onDateRange()" placeholder="To"/>
         <div id="sync-dot" title="Sync status" style="width:8px;height:8px;border-radius:50%;background:var(--muted);margin-right:2px;transition:background 0.4s;cursor:pointer;padding:8px;box-sizing:content-box;margin:-8px 2px -8px -8px" onclick="navigate('settings',null)"></div>
         <button class="icon-btn" onclick="toggleTheme()" title="Toggle theme">
           <svg id="theme-icon" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
@@ -828,6 +1022,29 @@ tbody td { padding: 12px 16px; color: var(--text); font-size: 13.5px; }
       </div>
 
 
+      <!-- INVENTORY -->
+      <div class="section" id="section-inventory">
+        <div class="section-head">
+          <div style="color:var(--muted);font-size:14px" id="inv-section-sub">Product catalog & stock levels</div>
+          <button class="btn btn-primary" onclick="openModal('product')">
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add Product
+          </button>
+        </div>
+        <div class="inv-summary-bar" id="inv-summary-bar"></div>
+        <div class="inv-filter-row" id="inv-filter-row">
+          <div class="search-wrap" style="flex:1;max-width:260px">
+            <svg class="search-icon" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" placeholder="Search products…" style="width:100%" oninput="onSearch(this.value); document.getElementById('search-input').value=this.value" id="inv-search-input"/>
+          </div>
+          <button class="inv-filter-btn active" onclick="setInvFilter('all',this)">All</button>
+          <button class="inv-filter-btn" onclick="setInvFilter('low',this)">⚠️ Low Stock</button>
+          <button class="inv-filter-btn" onclick="setInvFilter('out',this)">❌ Out of Stock</button>
+          <button class="inv-filter-btn" onclick="setInvFilter('ok',this)">✅ In Stock</button>
+        </div>
+        <div class="inv-grid" id="inv-grid"></div>
+      </div>
+
       <!-- SETTINGS -->
       <div class="section" id="section-settings">
         <div class="section-head">
@@ -873,33 +1090,240 @@ tbody td { padding: 12px 16px; color: var(--text); font-size: 13.5px; }
 //  STATE
 // ═══════════════════════════════════════════════════════════
 const state = {
-  sales: [], expenses: [], returns: [],
+  sales: [], expenses: [], returns: [], inventory: [],
   role: 'admin',
   theme: 'dark',
   search: '',
   dateFilter: 'all',
+  dateFrom: '',
+  dateTo: '',
   charts: {},
   reportsUnlocked: false,
   dashPeriod: '7d',
+  invFilter: 'all',
+  salesPage: 0,
+  expPage: 0,
+  retPage: 0,
+  dismissedNotifs: new Set(),
   _lastSync: null,
-  _syncError: null
+  _syncError: null,
+  _loading: true
 };
+
+// ═══════════════════════════════════════════════════════════
+//  LOCALSTORAGE HELPERS (hoisted — used by login PIN checks)
+// ═══════════════════════════════════════════════════════════
+const LS = { sales:'shades_sales', expenses:'shades_expenses', returns:'shades_returns', pin:'shades_pin', inventory:'shades_inventory', staffPin:'shades_staffPin' };
+function lsSave(key, data) { try { localStorage.setItem(LS[key]||key, JSON.stringify(data)); } catch(e){} }
+function lsLoad(key) { try { const d=localStorage.getItem(LS[key]||key); return d?JSON.parse(d):null; } catch(e){ return null; } }
+function lsSaveAll() { lsSave('sales',state.sales); lsSave('expenses',state.expenses); lsSave('returns',state.returns); lsSave('inventory',state.inventory); }
+function lsLoadAll() {
+  state.sales     = lsLoad('sales')     || [];
+  state.expenses  = lsLoad('expenses')  || [];
+  state.returns   = lsLoad('returns')   || [];
+  state.inventory = lsLoad('inventory') || [];
+  const dismissed = lsLoad('dismissedNotifs') || [];
+  state.dismissedNotifs = new Set(dismissed);
+}
+
+// ═══════════════════════════════════════════════════════════
+//  SESSION & ACCESS CONTROL
+// ═══════════════════════════════════════════════════════════
+// Roles: 'owner' = full access, 'staff' = limited access
+// Session stored in sessionStorage (cleared on tab close)
+const SESSION_KEY = 'shades_session';
+
+function getSession() {
+  try { return JSON.parse(sessionStorage.getItem(SESSION_KEY)); } catch(e) { return null; }
+}
+function setSession(role, name) {
+  sessionStorage.setItem(SESSION_KEY, JSON.stringify({ role, name, ts: Date.now() }));
+}
+function clearSession() {
+  sessionStorage.removeItem(SESSION_KEY);
+}
+
+function isOwner() { const s = getSession(); return s && s.role === 'owner'; }
+function isStaff() { const s = getSession(); return s && s.role === 'staff'; }
+
+// Owner PIN: same as Reports PIN (lsLoad('pin') || '1234')
+// Staff PIN: separate stored PIN, default '0000'
+// PINs are stored as SHA-256 hashes for security
+async function hashPin(pin) {
+  const enc = new TextEncoder().encode('shades_apparel_salt_' + pin);
+  const buf = await crypto.subtle.digest('SHA-256', enc);
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+function getOwnerPin() { return lsLoad('pin') || null; }  // stored as hash or null
+function getStaffPin() { return lsLoad('staffPin') || null; } // stored as hash or null
+
+async function checkPin(input, storedHash) {
+  if (!storedHash) {
+    // No PIN stored yet — default PINs: owner=1234, staff=0000
+    const defaultHash = await hashPin(storedHash === null ? (storedHash === lsLoad('pin') ? '1234' : '0000') : '1234');
+    return (await hashPin(input)) === defaultHash;
+  }
+  return (await hashPin(input)) === storedHash;
+}
+
+// Simplified synchronous PIN check (for legacy inline prompt calls)
+// We keep async for login/modal paths
+function getOwnerPinRaw() {
+  // Returns stored hash or default-hash-equivalent for comparison
+  return lsLoad('pin') || '__default_owner__';
+}
+function getStaffPinRaw() {
+  return lsLoad('staffPin') || '__default_staff__';
+}
+
+// ── LOGIN SCREEN STATE ──
+let _loginRole = 'owner';
+let _loginBuf  = '';
+
+function selectLoginRole(role) {
+  _loginRole = role; _loginBuf = '';
+  document.getElementById('login-tab-owner').classList.toggle('active', role==='owner');
+  document.getElementById('login-tab-staff').classList.toggle('active', role==='staff');
+  document.getElementById('login-pin-label').textContent = role==='owner' ? 'Enter Owner PIN' : 'Enter Staff PIN';
+  document.getElementById('login-error').textContent = '';
+  _updateLoginDots(false);
+}
+
+function loginKey(d) {
+  if (_loginBuf.length >= 4) return;
+  _loginBuf += d;
+  _updateLoginDots(false);
+  if (_loginBuf.length === 4) setTimeout(_checkLoginPin, 120);
+}
+function loginDel() {
+  _loginBuf = _loginBuf.slice(0,-1);
+  document.getElementById('login-error').textContent = '';
+  _updateLoginDots(false);
+}
+function _updateLoginDots(error) {
+  for (let i=0;i<4;i++) {
+    const d = document.getElementById('ld'+i);
+    if (!d) return; // login screen may not be visible
+    d.classList.toggle('filled', i < _loginBuf.length);
+    d.classList.toggle('error', error);
+  }
+}
+function _loginShake(msg) {
+  _updateLoginDots(true);
+  document.getElementById('login-error').textContent = msg;
+  setTimeout(() => { _loginBuf = ''; _updateLoginDots(false); document.getElementById('login-error').textContent = ''; }, 700);
+}
+async function _checkLoginPin() {
+  const storedHash = _loginRole === 'owner' ? lsLoad('pin') : lsLoad('staffPin');
+  const defaultPin = _loginRole === 'owner' ? '1234' : '0000';
+  let match = false;
+  if (!storedHash) {
+    // No hash stored yet — compare against default plain PIN
+    match = _loginBuf === defaultPin;
+    if (match) {
+      // Migrate: store hash of default PIN now
+      hashPin(_loginBuf).then(h => lsSave(_loginRole === 'owner' ? 'pin' : 'staffPin', h));
+    }
+  } else {
+    const inputHash = await hashPin(_loginBuf);
+    match = inputHash === storedHash;
+  }
+  if (match) {
+    const name = _loginRole === 'owner' ? "Shade's Apparel" : 'Staff Member';
+    setSession(_loginRole, name);
+    document.getElementById('login-screen').style.display = 'none';
+    applySessionUI();
+    init();
+  } else {
+    _loginShake('Incorrect PIN — try again');
+  }
+}
+
+function applySessionUI() {
+  const sess = getSession();
+  if (!sess) return;
+  const owner = sess.role === 'owner';
+
+  // Sidebar user info
+  document.getElementById('sidebar-username').textContent = owner ? "Shade's Apparel" : 'Staff Member';
+  document.getElementById('sidebar-userrole').textContent = owner ? 'Store Owner' : 'Sales Staff';
+  document.getElementById('avatar-letter').textContent = owner ? 'S' : 'ST';
+  if (!owner) {
+    document.getElementById('avatar-letter').style.background = 'linear-gradient(135deg,#12d98c,#06b6d4)';
+  }
+
+  // Hide owner-only nav items from staff
+  document.querySelectorAll('.staff-hidden').forEach(el => {
+    el.style.display = owner ? '' : 'none';
+  });
+
+  // Session bar
+  const bar = document.getElementById('session-bar');
+  if (!owner) {
+    bar.classList.add('visible');
+    document.getElementById('session-bar-text').textContent = '👤 Staff Mode — sales, expenses & returns only';
+  } else {
+    bar.classList.remove('visible');
+  }
+
+  // Staff: hide edit/delete action buttons on all tables
+  // Done via CSS class on body
+  document.body.classList.toggle('is-staff', !owner);
+  document.body.classList.toggle('is-owner', owner);
+}
+
+function doLogout() {
+  if (!confirm('Log out of Shade\'s Apparel?')) return;
+  clearSession();
+  // Destroy all charts to prevent double-render on re-login
+  Object.keys(state.charts).forEach(k => {
+    try { state.charts[k].destroy(); } catch(e) {}
+  });
+  state.charts = {};
+  // Reset Firestore listeners flag so they re-attach on next login
+  window._appStarted = false;
+  window._listenersActive = false;
+  state.sales=[]; state.expenses=[]; state.returns=[]; state.inventory=[];
+  state.reportsUnlocked = false;
+  _loginBuf = ''; _loginRole = 'owner';
+  // Show login screen before calling selectLoginRole (which touches DOM)
+  document.getElementById('login-screen').style.display = 'flex';
+  selectLoginRole('owner');
+  document.body.classList.remove('is-staff','is-owner');
+  document.getElementById('session-bar').classList.remove('visible');
+}
+
+function checkSessionOnLoad() {
+  const sess = getSession();
+  if (sess) {
+    // Already logged in this tab session
+    document.getElementById('login-screen').style.display = 'none';
+    applySessionUI();
+    return true;
+  }
+  return false; // show login
+}
 
 // ═══════════════════════════════════════════════════════════
 //  FILTERS
 // ═══════════════════════════════════════════════════════════
-function applyFilters(arr, searchFields) {
+function applyFilters(arr, searchFields, ignoreDateFilter=false) {
   let res = [...arr];
-  const today = new Date().toISOString().split('T')[0];
-  const now = new Date();
-  if (state.dateFilter !== 'all') {
-    res = res.filter(item => {
-      const d = new Date(item.date);
-      if (state.dateFilter==='today') return item.date===today;
-      if (state.dateFilter==='week') { const w=new Date(now); w.setDate(w.getDate()-7); return d>=w; }
-      if (state.dateFilter==='month') return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();
-      return true;
-    });
+  if (!ignoreDateFilter) {
+    const today = new Date().toISOString().split('T')[0];
+    const now = new Date();
+    if (state.dateFrom && state.dateTo) {
+      res = res.filter(item => item.date >= state.dateFrom && item.date <= state.dateTo);
+    } else if (state.dateFilter !== 'all') {
+      res = res.filter(item => {
+        const d = new Date(item.date);
+        if (state.dateFilter==='today') return item.date===today;
+        if (state.dateFilter==='week') { const w=new Date(now); w.setDate(w.getDate()-7); return d>=w; }
+        if (state.dateFilter==='month') return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();
+        return true;
+      });
+    }
   }
   if (state.search) {
     const q = state.search.toLowerCase();
@@ -949,25 +1373,46 @@ function monthlyAggData() {
 //  DASHBOARD RENDER
 // ═══════════════════════════════════════════════════════════
 function renderDashboard() {
-  const completed = state.sales.filter(s=>s.status==='completed');
-  const totalRev = completed.reduce((s,e)=>s+(e.amount||0),0);
-  const totalExp = state.expenses.reduce((s,e)=>s+(e.amount||0),0);
-  const totalRef = state.returns.reduce((s,e)=>s+(e.refund||0),0);
-  const netProfit = totalRev - totalExp - totalRef;
-  const pending = state.sales.filter(s=>s.status==='pending').length;
+  // Apply date filter to dashboard data
+  const filteredSales    = applyFilters(state.sales,    ['product','status']);
+  const filteredExpenses = applyFilters(state.expenses, ['category','description']);
+  const filteredReturns  = applyFilters(state.returns,  ['product','reason']);
 
-  const mData = monthlyAggData();
-  const lastM = mData[mData.length-2]?.revenue||0;
-  const thisM = mData[mData.length-1]?.revenue||0;
+  const completed  = filteredSales.filter(s=>s.status==='completed');
+  const totalRev   = completed.reduce((s,e)=>s+(e.amount||0),0);
+  const totalExp   = filteredExpenses.reduce((s,e)=>s+(e.amount||0),0);
+  const totalRef   = filteredReturns.reduce((s,e)=>s+(e.refund||0),0);
+  const netProfit  = totalRev - totalExp - totalRef;
+  const pending    = filteredSales.filter(s=>s.status==='pending').length;
+
+  // Growth: compare current month to previous month (always uses full data)
+  const mData    = monthlyAggData();
+  const lastM    = mData[mData.length-2]?.revenue||0;
+  const thisM    = mData[mData.length-1]?.revenue||0;
   const growthPct = lastM>0?(((thisM-lastM)/lastM)*100).toFixed(1):null;
 
-  const kpis = [
-    {label:'Total Revenue',value:`K${fmt(totalRev)}`,icon:'💰',color:'green',sub:'↑ Completed sales',tc:'trend-up'},
-    {label:'Total Expenses',value:`K${fmt(totalExp)}`,icon:'📤',color:'red',sub:totalExp>totalRev*0.7?'↓ High':'↑ Controlled',tc:totalExp>totalRev*0.7?'trend-down':'trend-up'},
-    {label:'Net Profit',value:`K${fmt(netProfit)}`,icon:'📈',color:netProfit>=0?'green':'red',sub:netProfit>=0?'↑ Profitable':'↓ Loss',tc:netProfit>=0?'trend-up':'trend-down'},
-    {label:'Pending Orders',value:String(pending),icon:'⏳',color:'yellow',sub:'Awaiting completion',tc:''},
-    {label:'Total Returns',value:String(state.returns.length),icon:'↩️',color:'purple',sub:`K${fmt(totalRef)} refunded`,tc:''},
-    {label:'Monthly Growth',value:growthPct?`${growthPct}%`:'N/A',icon:'🚀',color:'cyan',sub:'vs last month',tc:parseFloat(growthPct)>=0?'trend-up':'trend-down'},
+  // Date filter label for dashboard context
+  let filterLabel = '';
+  if (state.dateFrom && state.dateTo)       filterLabel = `${state.dateFrom} → ${state.dateTo}`;
+  else if (state.dateFrom)                   filterLabel = `From ${state.dateFrom}`;
+  else if (state.dateTo)                     filterLabel = `Until ${state.dateTo}`;
+  else if (state.dateFilter === 'today')     filterLabel = 'Today';
+  else if (state.dateFilter === 'week')      filterLabel = 'Last 7 days';
+  else if (state.dateFilter === 'month')     filterLabel = 'This month';
+
+  const staffMode = isStaff();
+  const kpis = staffMode ? [
+    {label:'Completed Sales', value:String(completed.length),            icon:'✅', color:'green',  sub: filterLabel||'All time', tc:'trend-up'},
+    {label:'Pending Orders',  value:String(pending),                     icon:'⏳', color:'yellow', sub:'Awaiting completion',    tc:''},
+    {label:'Total Returns',   value:String(filteredReturns.length),      icon:'↩️', color:'purple', sub: filterLabel||'All time', tc:''},
+    {label:'Products in Stock',value:String(state.inventory.filter(p=>p.stock>0).length), icon:'📦', color:'cyan', sub:`${state.inventory.filter(p=>p.stock<=0).length} out of stock`, tc:''},
+  ] : [
+    {label:'Total Revenue',   value:`K${fmt(totalRev)}`,                 icon:'💰', color:'green',  sub: filterLabel||'All time',             tc:'trend-up'},
+    {label:'Total Expenses',  value:`K${fmt(totalExp)}`,                 icon:'📤', color:'red',    sub:totalExp>totalRev*0.7?'↓ High':'↑ Controlled', tc:totalExp>totalRev*0.7?'trend-down':'trend-up'},
+    {label:'Net Profit',      value:`K${fmt(netProfit)}`,                icon:'📈', color:netProfit>=0?'green':'red', sub:netProfit>=0?'↑ Profitable':'↓ Loss', tc:netProfit>=0?'trend-up':'trend-down'},
+    {label:'Pending Orders',  value:String(pending),                     icon:'⏳', color:'yellow', sub:'Awaiting completion',    tc:''},
+    {label:'Total Returns',   value:String(filteredReturns.length),      icon:'↩️', color:'purple', sub:`K${fmt(totalRef)} refunded`,          tc:''},
+    {label:'Monthly Growth',  value:growthPct?`${growthPct}%`:'N/A',    icon:'🚀', color:'cyan',   sub:'vs last month (all-time)',             tc:parseFloat(growthPct)>=0?'trend-up':'trend-down'},
   ];
   document.getElementById('kpi-grid').innerHTML = kpis.map((k,i)=>`
     <div class="kpi-card" data-color="${k.color}" style="animation-delay:${i*70}ms">
@@ -978,31 +1423,64 @@ function renderDashboard() {
     </div>
   `).join('');
 
-  // Charts row 1
-  document.getElementById('charts-row1').innerHTML = `
-    <div class="chart-card"><div class="chart-title">Revenue vs Expenses — Last 6 Months</div><div class="chart-wrap" style="height:210px"><canvas id="chart-rev-exp"></canvas></div></div>
-    <div class="chart-card"><div class="chart-title">Expense Breakdown</div><div class="chart-wrap" style="height:210px"><canvas id="chart-pie"></canvas></div></div>
-  `;
-
-  // Charts row 2
-  const topProds = Object.entries(state.sales.reduce((m,s)=>{m[s.product]=(m[s.product]||0)+(s.amount||0);return m;},{})).sort((a,b)=>b[1]-a[1]).slice(0,5);
-  document.getElementById('charts-row2').innerHTML = `
-    <div class="chart-card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-        <div class="chart-title" style="margin-bottom:0">Sales Trend</div>
-        <div class="chart-tabs">
-          <button class="chart-tab${state.dashPeriod==='7d'?' active':''}" onclick="setDashPeriod('7d')">7 Days</button>
-          <button class="chart-tab${state.dashPeriod==='14d'?' active':''}" onclick="setDashPeriod('14d')">14 Days</button>
-          <button class="chart-tab${state.dashPeriod==='month'?' active':''}" onclick="setDashPeriod('month')">Month</button>
+  // Charts row 1 — hidden from staff
+  if (staffMode) {
+    document.getElementById('charts-row1').innerHTML = `
+      <div class="chart-card" style="grid-column:1/-1;display:flex;align-items:center;justify-content:center;gap:12px;padding:28px;color:var(--muted);font-size:14px">
+        🔒 Revenue &amp; expense charts are visible to the owner only
+      </div>`;
+    document.getElementById('charts-row2').innerHTML = '';
+    document.getElementById('charts-row3').innerHTML = '';
+    // Only render the sales trend and top products for staff
+    document.getElementById('charts-row2').innerHTML = `
+      <div class="chart-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <div class="chart-title" style="margin-bottom:0">Sales Trend</div>
+          <div class="chart-tabs">
+            <button class="chart-tab${state.dashPeriod==='7d'?' active':''}" onclick="setDashPeriod('7d')">7 Days</button>
+            <button class="chart-tab${state.dashPeriod==='14d'?' active':''}" onclick="setDashPeriod('14d')">14 Days</button>
+            <button class="chart-tab${state.dashPeriod==='month'?' active':''}" onclick="setDashPeriod('month')">Month</button>
+          </div>
         </div>
+        <div class="chart-wrap" style="height:190px"><canvas id="chart-daily"></canvas></div>
       </div>
-      <div class="chart-wrap" style="height:190px"><canvas id="chart-daily"></canvas></div>
-    </div>
-    <div class="chart-card">
-      <div class="chart-title">Top Selling Products</div>
-      <div id="top-prods"></div>
-    </div>
-  `;
+      <div class="chart-card">
+        <div class="chart-title">Top Selling Products</div>
+        <div id="top-prods"></div>
+      </div>`;
+  } else {
+    // Full charts for owner
+    document.getElementById('charts-row1').innerHTML = `
+      <div class="chart-card"><div class="chart-title">Revenue vs Expenses — Last 6 Months</div><div class="chart-wrap" style="height:210px"><canvas id="chart-rev-exp"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">Expense Breakdown${filterLabel?' <span style="font-size:11px;font-weight:400;color:var(--muted)">· '+filterLabel+'</span>':''}</div><div class="chart-wrap" style="height:210px"><canvas id="chart-pie"></canvas></div></div>
+    `;
+    document.getElementById('charts-row2').innerHTML = `
+      <div class="chart-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <div class="chart-title" style="margin-bottom:0">Sales Trend</div>
+          <div class="chart-tabs">
+            <button class="chart-tab${state.dashPeriod==='7d'?' active':''}" onclick="setDashPeriod('7d')">7 Days</button>
+            <button class="chart-tab${state.dashPeriod==='14d'?' active':''}" onclick="setDashPeriod('14d')">14 Days</button>
+            <button class="chart-tab${state.dashPeriod==='month'?' active':''}" onclick="setDashPeriod('month')">Month</button>
+          </div>
+        </div>
+        <div class="chart-wrap" style="height:190px"><canvas id="chart-daily"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Top Selling Products${filterLabel?' <span style="font-size:11px;font-weight:400;color:var(--muted)">· '+filterLabel+'</span>':''}</div>
+        <div id="top-prods"></div>
+      </div>`;
+
+    document.getElementById('charts-row3').innerHTML = `
+      <div class="chart-card">
+        <div class="chart-title">Best Day of the Week</div>
+        <div class="chart-wrap" style="height:200px"><canvas id="chart-dayofweek"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Returns Trend — Last 6 Months</div>
+        <div class="chart-wrap" style="height:200px"><canvas id="chart-returns-trend"></canvas></div>
+      </div>`;
+  }
 
   const cd = chartDefaults();
   const sharedAxes = {
@@ -1010,25 +1488,61 @@ function renderDashboard() {
     y:{grid:{color:cd.grid},ticks:{color:cd.text,font:{family:'Epilogue',size:11},callback:v=>`K${v}`}}
   };
 
-  // Revenue vs Expenses area chart
-  destroyChart('rev-exp');
-  const ctx1 = document.getElementById('chart-rev-exp').getContext('2d');
-  const gradRev = ctx1.createLinearGradient(0,0,0,220); gradRev.addColorStop(0,'rgba(59,130,246,0.35)'); gradRev.addColorStop(1,'rgba(59,130,246,0)');
-  const gradExp = ctx1.createLinearGradient(0,0,0,220); gradExp.addColorStop(0,'rgba(244,63,94,0.25)'); gradExp.addColorStop(1,'rgba(244,63,94,0)');
-  state.charts['rev-exp'] = new Chart(ctx1,{type:'line',data:{labels:mData.map(m=>m.label),datasets:[
-    {label:'Revenue',data:mData.map(m=>m.revenue),borderColor:'#3b82f6',backgroundColor:gradRev,fill:true,tension:0.4,borderWidth:2,pointRadius:3},
-    {label:'Expenses',data:mData.map(m=>m.expenses),borderColor:'#f43f5e',backgroundColor:gradExp,fill:true,tension:0.4,borderWidth:2,pointRadius:3}
-  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:cd.text,font:{family:'Epilogue'}}},tooltip:{backgroundColor:cd.bg,titleColor:isDark()?'#e8edf5':'#0f172a',bodyColor:cd.text,borderColor:'#1e2d45',borderWidth:1,callbacks:{label:c=>`K${c.parsed.y.toFixed(2)}`}}},scales:sharedAxes}});
+  if (!staffMode) {
+    // Revenue vs Expenses area chart (always uses full monthly data — not date-filtered, for trend context)
+    destroyChart('rev-exp');
+    const ctx1 = document.getElementById('chart-rev-exp').getContext('2d');
+    const gradRev = ctx1.createLinearGradient(0,0,0,220); gradRev.addColorStop(0,'rgba(59,130,246,0.35)'); gradRev.addColorStop(1,'rgba(59,130,246,0)');
+    const gradExp = ctx1.createLinearGradient(0,0,0,220); gradExp.addColorStop(0,'rgba(244,63,94,0.25)'); gradExp.addColorStop(1,'rgba(244,63,94,0)');
+    state.charts['rev-exp'] = new Chart(ctx1,{type:'line',data:{labels:mData.map(m=>m.label),datasets:[
+      {label:'Revenue',data:mData.map(m=>m.revenue),borderColor:'#3b82f6',backgroundColor:gradRev,fill:true,tension:0.4,borderWidth:2,pointRadius:3},
+      {label:'Expenses',data:mData.map(m=>m.expenses),borderColor:'#f43f5e',backgroundColor:gradExp,fill:true,tension:0.4,borderWidth:2,pointRadius:3}
+    ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:cd.text,font:{family:'Epilogue'}}},tooltip:{backgroundColor:cd.bg,titleColor:isDark()?'#e8edf5':'#0f172a',bodyColor:cd.text,borderColor:'#1e2d45',borderWidth:1,callbacks:{label:c=>`K${c.parsed.y.toFixed(2)}`}}},scales:sharedAxes}});
 
-  // Pie chart
-  const expMap = state.expenses.reduce((m,e)=>{m[e.category]=(m[e.category]||0)+(e.amount||0);return m;},{});
-  const pieLabels = Object.keys(expMap); const pieData = Object.values(expMap);
-  const pieColors = ['#3b82f6','#8b5cf6','#06b6d4','#10b981','#f59e0b'];
-  destroyChart('pie');
-  const ctx2 = document.getElementById('chart-pie').getContext('2d');
-  state.charts['pie'] = new Chart(ctx2,{type:'doughnut',data:{labels:pieLabels,datasets:[{data:pieData,backgroundColor:pieColors,borderWidth:0,hoverOffset:6}]},options:{responsive:true,maintainAspectRatio:false,cutout:'58%',plugins:{legend:{position:'bottom',labels:{color:cd.text,font:{family:'Epilogue',size:11},padding:12}},tooltip:{backgroundColor:cd.bg,titleColor:isDark()?'#e8edf5':'#0f172a',bodyColor:cd.text,borderColor:'#1e2d45',borderWidth:1,callbacks:{label:c=>`K${c.parsed.toFixed(2)}`}}}}});
+    // Pie chart — uses filtered expenses
+    const expMap = filteredExpenses.reduce((m,e)=>{m[e.category]=(m[e.category]||0)+(e.amount||0);return m;},{});
+    const pieLabels = Object.keys(expMap); const pieData = Object.values(expMap);
+    const pieColors = ['#3b82f6','#8b5cf6','#06b6d4','#10b981','#f59e0b'];
+    destroyChart('pie');
+    const ctx2 = document.getElementById('chart-pie').getContext('2d');
+    state.charts['pie'] = new Chart(ctx2,{type:'doughnut',data:{labels:pieLabels,datasets:[{data:pieData,backgroundColor:pieColors,borderWidth:0,hoverOffset:6}]},options:{responsive:true,maintainAspectRatio:false,cutout:'58%',plugins:{legend:{position:'bottom',labels:{color:cd.text,font:{family:'Epilogue',size:11},padding:12}},tooltip:{backgroundColor:cd.bg,titleColor:isDark()?'#e8edf5':'#0f172a',bodyColor:cd.text,borderColor:'#1e2d45',borderWidth:1,callbacks:{label:c=>`K${c.parsed.toFixed(2)}`}}}}});
 
-  // Period bar (7d / 14d / month)
+    // Best day of week — uses filtered completed sales
+    const dowLabels = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    const dowTotals = [0,0,0,0,0,0,0];
+    filteredSales.filter(s=>s.status==='completed').forEach(s=>{
+      const d = new Date(s.date);
+      if (!isNaN(d)) dowTotals[d.getDay()] += s.amount||0;
+    });
+    const dowColors = dowTotals.map(v=> v===Math.max(...dowTotals) ? '#f59e0b' : (isDark()?'rgba(59,130,246,0.6)':'rgba(59,130,246,0.5)'));
+    destroyChart('dayofweek');
+    const ctx4 = document.getElementById('chart-dayofweek').getContext('2d');
+    state.charts['dayofweek'] = new Chart(ctx4,{type:'bar',data:{labels:dowLabels,datasets:[{label:'Sales',data:dowTotals,backgroundColor:dowColors,borderRadius:6,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{backgroundColor:cd.bg,titleColor:isDark()?'#e8edf5':'#0f172a',bodyColor:cd.text,borderColor:'#1e2d45',borderWidth:1,callbacks:{label:c=>`K${c.parsed.y.toFixed(2)}`}}},scales:sharedAxes}});
+
+    // Returns trend — uses filtered returns
+    const retMap = {};
+    filteredReturns.forEach(r=>{
+      const d = new Date(r.date||r.createdAt);
+      if (!isNaN(d)) {
+        const key = d.toLocaleDateString('en-US',{month:'short',year:'2-digit'});
+        retMap[key] = (retMap[key]||0) + (r.refund||0);
+      }
+    });
+    const retLabels = []; const retVals = [];
+    for (let i=5;i>=0;i--) {
+      const d2 = new Date(); d2.setMonth(d2.getMonth()-i);
+      const lbl = d2.toLocaleDateString('en-US',{month:'short',year:'2-digit'});
+      retLabels.push(lbl);
+      retVals.push(retMap[lbl]||0);
+    }
+    const gradRet = document.getElementById('chart-returns-trend').getContext('2d').createLinearGradient(0,0,0,200);
+    gradRet.addColorStop(0,'rgba(244,63,94,0.35)'); gradRet.addColorStop(1,'rgba(244,63,94,0)');
+    destroyChart('returns-trend');
+    const ctx5 = document.getElementById('chart-returns-trend').getContext('2d');
+    state.charts['returns-trend'] = new Chart(ctx5,{type:'line',data:{labels:retLabels,datasets:[{label:'Refunds',data:retVals,borderColor:'#f43f5e',backgroundColor:gradRet,fill:true,tension:0.4,borderWidth:2,pointRadius:3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{backgroundColor:cd.bg,titleColor:isDark()?'#e8edf5':'#0f172a',bodyColor:cd.text,borderColor:'#1e2d45',borderWidth:1,callbacks:{label:c=>`K${c.parsed.y.toFixed(2)}`}}},scales:sharedAxes}});
+  }
+
+  // Period bar chart — uses filtered completed sales
   const _pd = state.dashPeriod==='month'?new Date().getDate():state.dashPeriod==='14d'?14:7;
   const days = {};
   for (let i=_pd-1;i>=0;i--) {
@@ -1036,65 +1550,18 @@ function renderDashboard() {
     const k=d.toISOString().split('T')[0];
     days[k]={label:_pd<=14?d.toLocaleDateString('en-US',{weekday:'short'}):d.toLocaleDateString('en-US',{month:'short',day:'numeric'}),amount:0};
   }
-  state.sales.filter(s=>s.status==='completed').forEach(s=>{if(days[s.date])days[s.date].amount+=s.amount||0;});
+  filteredSales.filter(s=>s.status==='completed').forEach(s=>{if(days[s.date])days[s.date].amount+=s.amount||0;});
   const dayArr = Object.values(days);
   destroyChart('daily');
   const ctx3 = document.getElementById('chart-daily').getContext('2d');
   const gradBar = ctx3.createLinearGradient(0,0,0,180); gradBar.addColorStop(0,'rgba(59,130,246,0.9)'); gradBar.addColorStop(1,'rgba(59,130,246,0.4)');
   state.charts['daily'] = new Chart(ctx3,{type:'bar',data:{labels:dayArr.map(d=>d.label),datasets:[{label:'Sales',data:dayArr.map(d=>d.amount),backgroundColor:gradBar,borderRadius:6,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{backgroundColor:cd.bg,titleColor:isDark()?'#e8edf5':'#0f172a',bodyColor:cd.text,borderColor:'#1e2d45',borderWidth:1,callbacks:{label:c=>`K${c.parsed.y.toFixed(2)}`}}},scales:sharedAxes}});
 
-  // Top products bars
+  // Top products — uses filtered sales
+  const topProds = Object.entries(filteredSales.reduce((m,s)=>{m[s.product]=(m[s.product]||0)+(s.amount||0);return m;},{})).sort((a,b)=>b[1]-a[1]).slice(0,5);
   const maxVal = topProds[0]?.[1]||1;
   const barColors = ['#3b82f6','#8b5cf6','#06b6d4','#10b981','#f59e0b'];
-
-  // Row 3 — Best day of week + Returns trend
-  document.getElementById('charts-row3').innerHTML = `
-    <div class="chart-card">
-      <div class="chart-title">Best Day of the Week</div>
-      <div class="chart-wrap" style="height:200px"><canvas id="chart-dayofweek"></canvas></div>
-    </div>
-    <div class="chart-card">
-      <div class="chart-title">Returns Trend — Last 6 Months</div>
-      <div class="chart-wrap" style="height:200px"><canvas id="chart-returns-trend"></canvas></div>
-    </div>
-  `;
-
-  // Best day of week
-  const dowLabels = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-  const dowTotals = [0,0,0,0,0,0,0];
-  state.sales.filter(s=>s.status==='completed').forEach(s=>{
-    const d = new Date(s.date);
-    if (!isNaN(d)) dowTotals[d.getDay()] += s.amount||0;
-  });
-  const dowColors = dowTotals.map((v,i)=> v===Math.max(...dowTotals) ? '#f59e0b' : (isDark()?'rgba(59,130,246,0.6)':'rgba(59,130,246,0.5)'));
-  destroyChart('dayofweek');
-  const ctx4 = document.getElementById('chart-dayofweek').getContext('2d');
-  state.charts['dayofweek'] = new Chart(ctx4,{type:'bar',data:{labels:dowLabels,datasets:[{label:'Sales',data:dowTotals,backgroundColor:dowColors,borderRadius:6,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{backgroundColor:cd.bg,titleColor:isDark()?'#e8edf5':'#0f172a',bodyColor:cd.text,borderColor:'#1e2d45',borderWidth:1,callbacks:{label:c=>`K${c.parsed.y.toFixed(2)}`}}},scales:sharedAxes}});
-
-  // Returns trend — last 6 months
-  const retMap = {};
-  state.returns.forEach(r=>{
-    const d = new Date(r.date||r.createdAt);
-    if (!isNaN(d)) {
-      const key = d.toLocaleDateString('en-US',{month:'short',year:'2-digit'});
-      retMap[key] = (retMap[key]||0) + (r.refund||0);
-    }
-  });
-  // Build last 6 months labels
-  const retLabels = []; const retVals = [];
-  for (let i=5;i>=0;i--) {
-    const d2 = new Date(); d2.setMonth(d2.getMonth()-i);
-    const lbl = d2.toLocaleDateString('en-US',{month:'short',year:'2-digit'});
-    retLabels.push(lbl);
-    retVals.push(retMap[lbl]||0);
-  }
-  const gradRet = document.getElementById('chart-returns-trend').getContext('2d').createLinearGradient(0,0,0,200);
-  gradRet.addColorStop(0,'rgba(244,63,94,0.35)'); gradRet.addColorStop(1,'rgba(244,63,94,0)');
-  destroyChart('returns-trend');
-  const ctx5 = document.getElementById('chart-returns-trend').getContext('2d');
-  state.charts['returns-trend'] = new Chart(ctx5,{type:'line',data:{labels:retLabels,datasets:[{label:'Refunds',data:retVals,borderColor:'#f43f5e',backgroundColor:gradRet,fill:true,tension:0.4,borderWidth:2,pointRadius:3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{backgroundColor:cd.bg,titleColor:isDark()?'#e8edf5':'#0f172a',bodyColor:cd.text,borderColor:'#1e2d45',borderWidth:1,callbacks:{label:c=>`K${c.parsed.y.toFixed(2)}`}}},scales:sharedAxes}});
-
-  document.getElementById('top-prods').innerHTML = topProds.map(([name,val],i)=>`
+  document.getElementById('top-prods').innerHTML = topProds.length ? topProds.map(([name,val],i)=>`
     <div style="margin-bottom:12px">
       <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">
         <span style="color:var(--text);font-weight:500">${name}</span>
@@ -1102,17 +1569,23 @@ function renderDashboard() {
       </div>
       <div class="progress-bar"><div class="progress-fill" style="width:${(val/maxVal*100).toFixed(0)}%;background:${barColors[i%5]}"></div></div>
     </div>
-  `).join('');
+  `).join('') : `<div style="color:var(--muted);font-size:13px;padding:20px 0;text-align:center">No sales in this period</div>`;
 }
 
 // ═══════════════════════════════════════════════════════════
 //  SALES RENDER
 // ═══════════════════════════════════════════════════════════
+const PAGE_SIZE = 50;
 function renderSales() {
   const filtered = applyFilters(state.sales,['product','status']);
   const total = filtered.reduce((s,e)=>s+(e.amount||0),0);
   const comp = filtered.filter(s=>s.status==='completed').length;
   const pend = filtered.filter(s=>s.status==='pending').length;
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  if (state.salesPage >= totalPages) state.salesPage = totalPages - 1;
+  const page = state.salesPage;
+  const pageItems = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
 
   document.getElementById('sales-stats').innerHTML = `
     <div class="mini-stat"><div class="mini-stat-val" style="color:var(--green)">K${fmt(total)}</div><div class="mini-stat-lbl">Total</div></div>
@@ -1120,7 +1593,7 @@ function renderSales() {
     <div class="mini-stat"><div class="mini-stat-val" style="color:var(--yellow)">${pend}</div><div class="mini-stat-lbl">Pending</div></div>
   `;
   document.getElementById('sales-count').textContent = `${filtered.length} records`;
-  document.getElementById('sales-tbody').innerHTML = filtered.length?filtered.slice(0,60).map(s=>`
+  document.getElementById('sales-tbody').innerHTML = pageItems.length?pageItems.map(s=>`
     <tr>
       <td style="font-weight:600">${s.product}</td>
       <td style="color:var(--muted)">${s.qty}</td>
@@ -1129,11 +1602,31 @@ function renderSales() {
       <td style="color:var(--muted);font-size:12px">${s.date}</td>
       <td><span class="badge ${s.status==='completed'?'badge-green':'badge-yellow'}">${s.status}</span></td>
       <td><div class="action-btns">
+        ${s.status==='pending'?`<button class="action-btn" style="color:var(--green);border-color:rgba(18,217,140,0.3)" onclick="quickCompleteSale('${s.id}')" title="Mark as completed">✓</button>`:''}
         <button class="action-btn edit" onclick="editRecord('sales','${s.id}')">✏️</button>
         <button class="action-btn del"  onclick="deleteRecord('sales','${s.id}')">🗑️</button>
       </div></td>
     </tr>
   `).join(''):`<tr class="empty-row"><td colspan="7">No sales records found</td></tr>`;
+
+  // Pagination controls
+  let paginationHtml = '';
+  if (totalPages > 1) {
+    paginationHtml = `<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-top:1px solid var(--border);font-size:13px;">
+      <span style="color:var(--muted)">Page ${page+1} of ${totalPages} &nbsp;·&nbsp; ${filtered.length} records</span>
+      <div style="display:flex;gap:6px">
+        <button class="action-btn" onclick="state.salesPage=0;renderSales()" ${page===0?'disabled style="opacity:0.4"':''}>«</button>
+        <button class="action-btn" onclick="state.salesPage--;renderSales()" ${page===0?'disabled style="opacity:0.4"':''}>‹ Prev</button>
+        <button class="action-btn" onclick="state.salesPage++;renderSales()" ${page>=totalPages-1?'disabled style="opacity:0.4"':''}>Next ›</button>
+        <button class="action-btn" onclick="state.salesPage=${totalPages-1};renderSales()" ${page>=totalPages-1?'disabled style="opacity:0.4"':''}>»</button>
+      </div>
+    </div>`;
+  }
+  // Inject pagination after table
+  const tableCard = document.querySelector('#section-sales .table-card');
+  let pagDiv = document.getElementById('sales-pagination');
+  if (!pagDiv) { pagDiv = document.createElement('div'); pagDiv.id = 'sales-pagination'; tableCard.appendChild(pagDiv); }
+  pagDiv.innerHTML = paginationHtml;
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1153,7 +1646,7 @@ function renderExpenses() {
     </div>
   `).join('');
 
-  document.getElementById('exp-tbody').innerHTML = filtered.length?filtered.slice(0,60).map(e=>`
+  document.getElementById('exp-tbody').innerHTML = filtered.length?filtered.slice(state.expPage*PAGE_SIZE,(state.expPage+1)*PAGE_SIZE).map(e=>`
     <tr>
       <td><span class="badge badge-blue">${e.category}</span></td>
       <td style="color:var(--muted)">${e.description}</td>
@@ -1165,6 +1658,12 @@ function renderExpenses() {
       </div></td>
     </tr>
   `).join(''):`<tr class="empty-row"><td colspan="5">No expense records found</td></tr>`;
+  const epTotal = Math.max(1,Math.ceil(filtered.length/PAGE_SIZE));
+  if(state.expPage>=epTotal)state.expPage=epTotal-1;
+  const epCard=document.querySelector('#section-expenses .table-card');
+  let epDiv=document.getElementById('exp-pagination');
+  if(!epDiv){epDiv=document.createElement('div');epDiv.id='exp-pagination';epCard.appendChild(epDiv);}
+  epDiv.innerHTML=epTotal>1?`<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-top:1px solid var(--border);font-size:13px;"><span style="color:var(--muted)">Page ${state.expPage+1} of ${epTotal} · ${filtered.length} records</span><div style="display:flex;gap:6px"><button class="action-btn" onclick="state.expPage--;renderExpenses()" ${state.expPage===0?'disabled style="opacity:0.4"':''}>‹ Prev</button><button class="action-btn" onclick="state.expPage++;renderExpenses()" ${state.expPage>=epTotal-1?'disabled style="opacity:0.4"':''}>Next ›</button></div></div>`:'';
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1177,7 +1676,7 @@ function renderReturns() {
     <div style="font-family:var(--font-head);font-size:24px;font-weight:800">${filtered.length} <span style="font-size:14px;color:var(--muted);font-weight:400">returns</span></div>
     <div style="font-family:var(--font-head);font-size:20px;font-weight:800;color:var(--red)">K${fmt(totalRef)} <span style="font-size:13px;color:var(--muted);font-weight:400">refunded</span></div>
   `;
-  document.getElementById('ret-tbody').innerHTML = filtered.length?filtered.map(r=>`
+  document.getElementById('ret-tbody').innerHTML = filtered.length?filtered.slice(state.retPage*PAGE_SIZE,(state.retPage+1)*PAGE_SIZE).map(r=>`
     <tr>
       <td style="font-weight:600">${r.product}</td>
       <td style="color:var(--muted)">${r.qty}</td>
@@ -1190,6 +1689,12 @@ function renderReturns() {
       </div></td>
     </tr>
   `).join(''):`<tr class="empty-row"><td colspan="6">No returns recorded</td></tr>`;
+  const rtTotal=Math.max(1,Math.ceil(filtered.length/PAGE_SIZE));
+  if(state.retPage>=rtTotal)state.retPage=rtTotal-1;
+  const rtCard=document.querySelector('#section-returns .table-card');
+  let rtDiv=document.getElementById('ret-pagination');
+  if(!rtDiv){rtDiv=document.createElement('div');rtDiv.id='ret-pagination';rtCard.appendChild(rtDiv);}
+  rtDiv.innerHTML=rtTotal>1?`<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-top:1px solid var(--border);font-size:13px;"><span style="color:var(--muted)">Page ${state.retPage+1} of ${rtTotal} · ${filtered.length} records</span><div style="display:flex;gap:6px"><button class="action-btn" onclick="state.retPage--;renderReturns()" ${state.retPage===0?'disabled style="opacity:0.4"':''}>‹ Prev</button><button class="action-btn" onclick="state.retPage++;renderReturns()" ${state.retPage>=rtTotal-1?'disabled style="opacity:0.4"':''}>Next ›</button></div></div>`:'';
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1242,31 +1747,74 @@ function renderReports() {
 // ═══════════════════════════════════════════════════════════
 //  NOTIFICATIONS
 // ═══════════════════════════════════════════════════════════
-function renderNotifications() {
+function dismissNotif(key) {
+  state.dismissedNotifs.add(key);
+  lsSave('dismissedNotifs', [...state.dismissedNotifs]);
+  renderNotifications();
+}
+function clearAllNotifs() {
+  // Build current keys and dismiss them all
+  const keys = buildNotifItems().map(n=>n.key);
+  keys.forEach(k=>state.dismissedNotifs.add(k));
+  lsSave('dismissedNotifs', [...state.dismissedNotifs]);
+  renderNotifications();
+}
+function buildNotifItems() {
   const totalRev = state.sales.filter(s=>s.status==='completed').reduce((s,e)=>s+(e.amount||0),0);
   const totalExp = state.expenses.reduce((s,e)=>s+(e.amount||0),0);
   const net = totalRev - totalExp;
-  const notes = [];
   const today = new Date().toISOString().split('T')[0];
   const todaySales = state.sales.filter(s=>s.date===today).reduce((s,e)=>s+(e.amount||0),0);
   const pending = state.sales.filter(s=>s.status==='pending').length;
-
-  if (net < totalRev*0.1 && totalRev>0) notes.push('⚠️ Low profit margin — review your expenses');
-  if (totalExp > totalRev*0.8 && totalRev>0) notes.push('🔴 High expense ratio relative to revenue!');
-  if (todaySales>0) notes.push(`📊 Today's sales total: K${fmt(todaySales)}`);
-  if (pending>0) notes.push(`🕐 ${pending} pending order(s) need completion`);
-
-  document.getElementById('notif-bar').innerHTML = notes.join('<span style="opacity:0.3;margin:0 4px">·</span>');
+  const lowStock = state.inventory.filter(p=>p.stock>0&&p.stock<=(p.lowThreshold||5));
+  const outStock = state.inventory.filter(p=>p.stock<=0);
+  const notes = [];
+  if (net < totalRev*0.1 && totalRev>0) notes.push({key:'low-margin',msg:'⚠️ Low profit margin — review your expenses'});
+  if (totalExp > totalRev*0.8 && totalRev>0) notes.push({key:'high-exp',msg:'🔴 High expense ratio relative to revenue!'});
+  if (todaySales>0) notes.push({key:'today-'+today,msg:`📊 Today's sales: K${fmt(todaySales)}`});
+  if (pending>0) notes.push({key:'pending-'+pending,msg:`🕐 ${pending} pending order(s) need completion`});
+  if (outStock.length>0) notes.push({key:'outstock-'+outStock.map(p=>p.id).join(','),msg:`❌ ${outStock.length} product(s) out of stock — ${outStock.map(p=>p.name).slice(0,2).join(', ')}${outStock.length>2?'…':''}`});
+  if (lowStock.length>0) notes.push({key:'lowstock-'+lowStock.map(p=>p.id).join(','),msg:`⚠️ Low stock: ${lowStock.map(p=>`${p.name} (${p.stock} left)`).slice(0,3).join(', ')}${lowStock.length>3?'…':''}`});
+  return notes;
+}
+function renderNotifications() {
+  const allNotes = buildNotifItems();
+  const visible = allNotes.filter(n => !state.dismissedNotifs.has(n.key));
+  const bar = document.getElementById('notif-bar');
+  if (visible.length === 0) {
+    bar.innerHTML = '';
+    bar.style.display = 'none';
+  } else {
+    bar.style.display = '';
+    bar.innerHTML = `
+      <div style="display:flex;align-items:center;gap:0;flex:1;overflow:hidden;flex-wrap:wrap;gap:4px 10px">
+        ${visible.map(n=>`
+          <span style="display:inline-flex;align-items:center;gap:6px;white-space:nowrap">
+            ${n.msg}
+            <button onclick="dismissNotif('${n.key}')" title="Dismiss" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;line-height:1;padding:0 2px;opacity:0.7" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.7">✕</button>
+          </span>
+          <span style="opacity:0.3">·</span>
+        `).join('')}
+      </div>
+      <button onclick="clearAllNotifs()" style="background:none;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:2px 8px;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0;font-family:var(--font-body)">Clear all</button>
+    `;
+  }
   const badge = document.getElementById('notif-count');
-  if (notes.length>0) { badge.textContent=notes.length; badge.style.display='flex'; }
+  if (visible.length>0) { badge.textContent=visible.length; badge.style.display='flex'; }
   else { badge.style.display='none'; }
+  updateInvNavBadge();
 }
 
 // ═══════════════════════════════════════════════════════════
 //  NAVIGATION
 // ═══════════════════════════════════════════════════════════
-const sectionNames = {dashboard:'Dashboard',sales:'Sales',expenses:'Expenses',returns:'Returns',reports:'Reports',settings:'Settings'};
+const sectionNames = {dashboard:'Dashboard',sales:'Sales',expenses:'Expenses',returns:'Returns',reports:'Reports',settings:'Settings',inventory:'Inventory'};
 function navigate(id, btn, fromPopState=false) {
+  // Staff role guard — block owner-only sections even via back button or console
+  if (isStaff() && (id === 'reports' || id === 'settings' || id === 'inventory')) {
+    showToast('Access restricted — owner only','error');
+    return;
+  }
   // Intercept Reports — require PIN every visit unless already unlocked this session
   if (id === 'reports' && !state.reportsUnlocked) {
     showPinModal(() => navigate(id, btn));
@@ -1302,8 +1850,6 @@ let _pinBuffer = '';
 let _pinCallback = null;
 let _pinMode = 0;
 let _newPinTemp = '';
-
-function getStoredPin() { return lsLoad('pin') || '1234'; }
 
 function showPinModal(callback) {
   _pinMode = 0; _pinBuffer = ''; _pinCallback = callback;
@@ -1354,16 +1900,25 @@ function _pinShakeError(msg) {
   el.style.animation='none'; el.offsetHeight; el.style.animation='';
   setTimeout(()=>{ _pinBuffer=''; updatePinDots(false); }, 600);
 }
-function verifyPin() {
-  const stored = getStoredPin();
+async function verifyPin() {
+  const storedHash = lsLoad('pin');
+  const defaultPin = '1234';
+  let inputMatch = false;
+  if (!storedHash) {
+    inputMatch = _pinBuffer === defaultPin;
+    if (inputMatch) hashPin(_pinBuffer).then(h=>lsSave('pin',h)); // migrate
+  } else {
+    inputMatch = (await hashPin(_pinBuffer)) === storedHash;
+  }
+
   if (_pinMode === 0) {
-    if (_pinBuffer === stored) {
+    if (inputMatch) {
       state.reportsUnlocked = true;
       document.getElementById('pin-overlay').classList.remove('open');
       if (_pinCallback) { const cb=_pinCallback; _pinCallback=null; cb(); }
     } else { _pinShakeError('Incorrect PIN. Try again.'); }
   } else if (_pinMode === 1) {
-    if (_pinBuffer === stored) {
+    if (inputMatch) {
       _pinMode = 2; _pinBuffer = '';
       document.getElementById('pin-desc').textContent = 'Enter your new 4-digit PIN';
       document.getElementById('pin-error').textContent = '';
@@ -1376,7 +1931,8 @@ function verifyPin() {
     updatePinDots();
   } else if (_pinMode === 3) {
     if (_pinBuffer === _newPinTemp) {
-      lsSave('pin', _newPinTemp);
+      const hash = await hashPin(_newPinTemp);
+      lsSave('pin', hash);
       document.getElementById('pin-overlay').classList.remove('open');
       _pinMode = 0; _newPinTemp = ''; _pinBuffer = '';
       showToast('PIN changed successfully ✓','success');
@@ -1393,12 +1949,26 @@ function verifyPin() {
 }
 
 function renderSection(id) {
+  // Update topbar date-filter select visual state
+  const dateFilterSel = document.querySelector('.date-filter[onchange*="onDateFilter"]');
+  if (dateFilterSel) dateFilterSel.value = (state.dateFrom||state.dateTo) ? 'all' : state.dateFilter;
+
+  // Show filter-scope hint in inventory section heading
+  const invSub = document.getElementById('inv-section-sub');
+  if (invSub) {
+    const hasFilter = state.search || state.invFilter !== 'all';
+    const dateActive = state.dateFrom || state.dateTo || state.dateFilter !== 'all';
+    invSub.innerHTML = 'Product catalog &amp; stock levels'
+      + (dateActive ? ' &nbsp;<span style="font-size:11px;background:rgba(255,184,48,0.12);color:var(--yellow);border:1px solid rgba(255,184,48,0.25);border-radius:5px;padding:2px 7px">⚠️ Date filter doesn\'t apply to Inventory</span>' : '');
+  }
+
   if (id==='dashboard') renderDashboard();
   else if (id==='sales') renderSales();
   else if (id==='expenses') renderExpenses();
   else if (id==='returns') renderReturns();
   else if (id==='reports') renderReports();
   else if (id==='settings') renderSettings();
+  else if (id==='inventory') renderInventory();
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1411,7 +1981,20 @@ function openModal(type) {
 
   if (type==='sale') {
     titleEl.textContent = '📦 Record New Sale';
+    // Build product options from inventory
+    const invOpts = state.inventory.length
+      ? state.inventory.filter(p=>p.stock>0).map(p=>`<option value="${p.id}" data-price="${p.sellPrice||0}" data-name="${p.name.replace(/"/g,'&quot;')}">${p.name} (${p.stock} left) — K${(p.sellPrice||0).toFixed(2)}</option>`).join('')
+      : '';
+    const hasCatalog = state.inventory.length > 0;
     bodyEl.innerHTML = `
+      ${hasCatalog ? `
+      <div class="form-group"><label class="form-label">Select from Catalog <span style="color:var(--muted);font-weight:400">(optional)</span></label>
+        <select class="form-input" id="f-inv-pick" onchange="fillSaleFromInv(this)">
+          <option value="">— type manually below —</option>
+          ${invOpts}
+          ${state.inventory.filter(p=>p.stock<=0).length ? `<optgroup label="Out of Stock">${state.inventory.filter(p=>p.stock<=0).map(p=>`<option value="${p.id}" data-price="${p.sellPrice||0}" data-name="${p.name.replace(/"/g,'&quot;')}" disabled>${p.name} (out of stock)</option>`).join('')}</optgroup>` : ''}
+        </select>
+      </div>` : ''}
       <div class="form-group"><label class="form-label">Product Name</label><input class="form-input" id="f-product" placeholder="e.g. Denim Jacket (M)" oninput="calcTotal()"/></div>
       <div class="form-row">
         <div class="form-group"><label class="form-label">Quantity</label><input class="form-input" id="f-qty" type="number" min="1" value="1" oninput="calcTotal()"/></div>
@@ -1421,6 +2004,7 @@ function openModal(type) {
         <select class="form-input" id="f-status"><option value="completed">Completed</option><option value="pending">Pending</option></select>
       </div>
       <div class="calc-preview" id="calc-total" style="display:none"></div>
+      <input type="hidden" id="f-inv-id" value=""/>
       <button class="btn btn-primary" style="width:100%;justify-content:center;padding:12px" onclick="saveSale()">Save Sale</button>
     `;
   } else if (type==='expense') {
@@ -1446,10 +2030,51 @@ function openModal(type) {
       </div>
       <button class="btn btn-primary" style="width:100%;justify-content:center;padding:12px;background:linear-gradient(135deg,var(--purple),#8b5cf6);box-shadow:0 4px 16px rgba(166,108,255,0.4)" onclick="saveReturn()">Save Return</button>
     `;
+  } else if (type==='product') {
+    titleEl.textContent = '📦 Add Product to Inventory';
+    const cats = ['T-Shirts','Jackets','Trousers','Shorts','Dresses','Hoodies','Shoes','Accessories','Other'];
+    bodyEl.innerHTML = `
+      <div class="form-group"><label class="form-label">Product Name</label>
+        <input class="form-input" id="f-pname" placeholder="e.g. Denim Jacket (M)"/>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Category</label>
+          <select class="form-input" id="f-pcat">${cats.map(c=>`<option>${c}</option>`).join('')}</select>
+        </div>
+        <div class="form-group"><label class="form-label">SKU / Code (optional)</label>
+          <input class="form-input" id="f-psku" placeholder="e.g. DJ-M-BLU"/>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Cost Price (K)</label>
+          <input class="form-input" id="f-pcost" type="number" step="0.01" min="0" placeholder="0.00"/>
+        </div>
+        <div class="form-group"><label class="form-label">Selling Price (K)</label>
+          <input class="form-input" id="f-psell" type="number" step="0.01" min="0" placeholder="0.00"/>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Opening Stock (qty)</label>
+          <input class="form-input" id="f-pstock" type="number" min="0" value="0"/>
+        </div>
+        <div class="form-group"><label class="form-label">Low Stock Alert (qty)</label>
+          <input class="form-input" id="f-plow" type="number" min="0" value="5" title="Alert when stock falls below this number"/>
+        </div>
+      </div>
+      <div class="form-group"><label class="form-label">Description (optional)</label>
+        <input class="form-input" id="f-pdesc" placeholder="Size, colour, variant, etc."/>
+      </div>
+      <button class="btn btn-primary" style="width:100%;justify-content:center;padding:12px" onclick="saveProduct()">Save Product</button>
+    `;
+  } else if (type==='restock') {
+    // type restock passes id as extra arg — handled separately
   }
   overlay.classList.add('open');
 }
-function closeModal() { document.getElementById('modal-overlay').classList.remove('open'); }
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+  document.getElementById('modal-body').innerHTML = '';
+}
 function calcTotal() {
   const qty = parseFloat(document.getElementById('f-qty')?.value)||0;
   const price = parseFloat(document.getElementById('f-price')?.value)||0;
@@ -1487,8 +2112,17 @@ function saveSale() {
   const qty = parseInt(document.getElementById('f-qty')?.value)||0;
   const price = parseFloat(document.getElementById('f-price')?.value)||0;
   const status = document.getElementById('f-status')?.value;
+  const invId = document.getElementById('f-inv-id')?.value || '';
   if (!prod||qty<=0||price<=0) { showToast('Please fill all fields correctly','error'); return; }
-  saveRecord('sales',{product:prod,qty,price,amount:qty*price,status});
+  // Deduct from inventory if linked
+  if (invId && status === 'completed') {
+    const invIdx = state.inventory.findIndex(p=>p.id===invId);
+    if (invIdx !== -1) {
+      const newStock = Math.max(0, (state.inventory[invIdx].stock||0) - qty);
+      updateInventoryStock(invId, newStock, state.inventory[invIdx]);
+    }
+  }
+  saveRecord('sales',{product:prod,qty,price,amount:qty*price,status,invId});
 }
 function saveExpense() {
   const cat = document.getElementById('f-cat')?.value;
@@ -1507,29 +2141,102 @@ function saveReturn() {
 }
 
 // ═══════════════════════════════════════════════════════════
-//  CSV EXPORT
+//  QUICK COMPLETE SALE
+// ═══════════════════════════════════════════════════════════
+async function quickCompleteSale(id) {
+  if (isStaff()) { showToast('Access restricted — owner only','error'); return; }
+  const sale = state.sales.find(r=>r.id===id);
+  if (!sale || sale.status === 'completed') return;
+  if (!confirm(`Mark "${sale.product}" (${sale.qty} × K${(sale.price||0).toFixed(2)}) as completed?`)) return;
+  // Deduct from inventory if linked
+  if (sale.invId) {
+    const invIdx = state.inventory.findIndex(p=>p.id===sale.invId);
+    if (invIdx !== -1) {
+      const newStock = Math.max(0, (state.inventory[invIdx].stock||0) - (sale.qty||0));
+      updateInventoryStock(sale.invId, newStock, state.inventory[invIdx]);
+    }
+  }
+  await updateRecord('sales', id, { status: 'completed' });
+}
+
+// ═══════════════════════════════════════════════════════════
+//  CSV EXPORT — monthly summary + full individual records
 // ═══════════════════════════════════════════════════════════
 function exportCSV() {
-  const mData = monthlyAggData();
-  const totalRev = state.sales.filter(s=>s.status==='completed').reduce((s,e)=>s+(e.amount||0),0);
-  const totalExp = state.expenses.reduce((s,e)=>s+(e.amount||0),0);
-  const totalRef = state.returns.reduce((s,e)=>s+(e.refund||0),0);
-  const rows = [
-    ["Shade's Apparel — Monthly Financial Report"],
-    ['Generated',new Date().toLocaleDateString()],
-    [''],
-    ['Month','Revenue (K)','Expenses (K)','Returns (K)','Net Profit (K)','Margin'],
-    ...mData.map(m=>[m.label,m.revenue.toFixed(2),m.expenses.toFixed(2),m.returns.toFixed(2),m.profit.toFixed(2),m.revenue>0?((m.profit/m.revenue)*100).toFixed(1)+'%':'0%']),
-    [''],
-    ['TOTALS',totalRev.toFixed(2),totalExp.toFixed(2),totalRef.toFixed(2),(totalRev-totalExp-totalRef).toFixed(2),''],
-  ];
+  // Show export options modal
+  const overlay = document.getElementById('modal-overlay');
+  document.getElementById('modal-title').textContent = '📥 Export Data';
+  document.getElementById('modal-body').innerHTML = `
+    <p style="color:var(--muted);font-size:13px;margin-bottom:18px">Choose what to export as CSV:</p>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <button class="btn btn-success" style="justify-content:flex-start;gap:12px" onclick="doExportCSV('summary')">
+        📊 Monthly Summary Report
+        <span style="font-size:11px;font-weight:400;color:rgba(255,255,255,0.7)">Revenue, expenses, profit by month</span>
+      </button>
+      <button class="btn btn-primary" style="justify-content:flex-start;gap:12px" onclick="doExportCSV('sales')">
+        🧾 All Sales Records
+        <span style="font-size:11px;font-weight:400;color:rgba(255,255,255,0.7)">${state.sales.length} records</span>
+      </button>
+      <button class="btn" style="justify-content:flex-start;gap:12px;background:var(--card2);border:1px solid var(--border);color:var(--text)" onclick="doExportCSV('expenses')">
+        💸 All Expense Records
+        <span style="font-size:11px;font-weight:400;color:var(--muted)">${state.expenses.length} records</span>
+      </button>
+      <button class="btn" style="justify-content:flex-start;gap:12px;background:var(--card2);border:1px solid var(--border);color:var(--text)" onclick="doExportCSV('returns')">
+        ↩️ All Return Records
+        <span style="font-size:11px;font-weight:400;color:var(--muted)">${state.returns.length} records</span>
+      </button>
+      <button class="btn" style="justify-content:flex-start;gap:12px;background:var(--card2);border:1px solid var(--border);color:var(--text)" onclick="doExportCSV('all')">
+        📦 Full Export (all data)
+        <span style="font-size:11px;font-weight:400;color:var(--muted)">All records in one file</span>
+      </button>
+    </div>
+  `;
+  overlay.classList.add('open');
+}
+
+function doExportCSV(type) {
+  let rows = [];
+  const d = new Date().toLocaleDateString();
+  if (type === 'summary') {
+    const mData = monthlyAggData();
+    const totalRev = state.sales.filter(s=>s.status==='completed').reduce((s,e)=>s+(e.amount||0),0);
+    const totalExp = state.expenses.reduce((s,e)=>s+(e.amount||0),0);
+    const totalRef = state.returns.reduce((s,e)=>s+(e.refund||0),0);
+    rows = [["Shade's Apparel — Monthly Financial Report"],['Generated',d],[''],
+      ['Month','Revenue (K)','Expenses (K)','Returns (K)','Net Profit (K)','Margin'],
+      ...mData.map(m=>[m.label,m.revenue.toFixed(2),m.expenses.toFixed(2),m.returns.toFixed(2),m.profit.toFixed(2),m.revenue>0?((m.profit/m.revenue)*100).toFixed(1)+'%':'0%']),
+      [''],['TOTALS',totalRev.toFixed(2),totalExp.toFixed(2),totalRef.toFixed(2),(totalRev-totalExp-totalRef).toFixed(2),'']];
+  } else if (type === 'sales') {
+    rows = [["Shade's Apparel — Sales Records"],['Generated',d],[''],
+      ['Date','Product','Qty','Unit Price (K)','Amount (K)','Status'],
+      ...state.sales.map(s=>[s.date,`"${s.product}"`,s.qty,(s.price||0).toFixed(2),(s.amount||0).toFixed(2),s.status])];
+  } else if (type === 'expenses') {
+    rows = [["Shade's Apparel — Expense Records"],['Generated',d],[''],
+      ['Date','Category','Description','Amount (K)'],
+      ...state.expenses.map(e=>[e.date,e.category,`"${e.description}"`,(e.amount||0).toFixed(2)])];
+  } else if (type === 'returns') {
+    rows = [["Shade's Apparel — Return Records"],['Generated',d],[''],
+      ['Date','Product','Qty','Refund (K)','Reason'],
+      ...state.returns.map(r=>[r.date,`"${r.product}"`,r.qty,(r.refund||0).toFixed(2),r.reason])];
+  } else if (type === 'all') {
+    rows = [["Shade's Apparel — Full Export"],['Generated',d],[''],
+      ['--- SALES ---'],['Date','Product','Qty','Unit Price','Amount','Status'],
+      ...state.sales.map(s=>[s.date,`"${s.product}"`,s.qty,(s.price||0).toFixed(2),(s.amount||0).toFixed(2),s.status]),
+      [''],['--- EXPENSES ---'],['Date','Category','Description','Amount'],
+      ...state.expenses.map(e=>[e.date,e.category,`"${e.description}"`,(e.amount||0).toFixed(2)]),
+      [''],['--- RETURNS ---'],['Date','Product','Qty','Refund','Reason'],
+      ...state.returns.map(r=>[r.date,`"${r.product}"`,r.qty,(r.refund||0).toFixed(2),r.reason])];
+  }
   const csv = rows.map(r=>r.join(',')).join('\n');
   const blob = new Blob([csv],{type:'text/csv'});
   const url = URL.createObjectURL(blob);
-  const a = document.createElement('a'); a.href=url; a.download=`FinTrack_Report_${new Date().toISOString().split('T')[0]}.csv`;
+  const a = document.createElement('a'); a.href=url;
+  a.download=`ShadesApparel_${type}_${new Date().toISOString().split('T')[0]}.csv`;
   a.click(); URL.revokeObjectURL(url);
-  showToast('CSV report downloaded','success');
+  closeModal();
+  showToast('CSV downloaded ✓','success');
 }
+
 
 // ═══════════════════════════════════════════════════════════
 //  HELPERS
@@ -1555,8 +2262,23 @@ function toggleTheme() {
   Object.keys(state.charts).forEach(k=>{ destroyChart(k); });
   renderSection(getCurrentSection());
 }
-function onSearch(v) { state.search=v; renderSection(getCurrentSection()); }
-function onDateFilter(v) { state.dateFilter=v; renderSection(getCurrentSection()); }
+function onSearch(v) { state.search=v; state.salesPage=0; state.expPage=0; state.retPage=0; renderSection(getCurrentSection()); }
+function onDateFilter(v) {
+  state.dateFilter=v; state.dateFrom=''; state.dateTo='';
+  state.salesPage=0; state.expPage=0; state.retPage=0;
+  // Clear custom range inputs if present
+  const fromEl=document.getElementById('date-from'); if(fromEl)fromEl.value='';
+  const toEl=document.getElementById('date-to'); if(toEl)toEl.value='';
+  renderSection(getCurrentSection());
+}
+function onDateRange() {
+  const from=document.getElementById('date-from')?.value||'';
+  const to=document.getElementById('date-to')?.value||'';
+  state.dateFrom=from; state.dateTo=to;
+  if(from||to){state.dateFilter='all'; const sel=document.querySelector('.date-filter'); if(sel)sel.value='all';}
+  state.salesPage=0; state.expPage=0; state.retPage=0;
+  renderSection(getCurrentSection());
+}
 function openSidebar() {
   document.getElementById('sidebar').classList.add('open');
   document.getElementById('sidebar-overlay').classList.add('show');
@@ -1567,7 +2289,18 @@ function closeSidebar() {
 }
 function toggleNotifPanel() {
   const bar = document.getElementById('notif-bar');
-  bar.style.display = bar.style.display==='none'?'flex':'none';
+  // If all notifs are dismissed, re-show them temporarily when user manually opens
+  const allNotes = buildNotifItems();
+  const visible = allNotes.filter(n => !state.dismissedNotifs.has(n.key));
+  if (visible.length === 0 && allNotes.length > 0) {
+    // All dismissed — clear dismissals so user can see them again
+    state.dismissedNotifs.clear();
+    lsSave('dismissedNotifs', []);
+    renderNotifications();
+    return;
+  }
+  const computed = window.getComputedStyle(bar).display;
+  bar.style.display = (computed === 'none' || !bar.style.display) ? 'flex' : 'none';
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1582,6 +2315,7 @@ function init() {
   lsLoadAll(); // load from localStorage immediately (offline support)
   renderNotifications();
   renderDashboard();
+  updateInvNavBadge();
   setupFirestoreListeners();
 }
 
@@ -1590,16 +2324,28 @@ function setupFirestoreListeners() {
   if (!window._DEMO && window._db) {
     window._listenersActive = true;
     const {collection,query,orderBy,onSnapshot} = window._fs;
-    const cols = [{col:'sales',key:'sales'},{col:'expenses',key:'expenses'},{col:'returns',key:'returns'}];
+    const cols = [{col:'sales',key:'sales'},{col:'expenses',key:'expenses'},{col:'returns',key:'returns'},{col:'inventory',key:'inventory'}];
     let loadedCount = 0;
     cols.forEach(({col,key})=>{
       const q = query(collection(window._db,col),orderBy('timestamp','desc'));
       onSnapshot(q, snap=>{
-        state[key] = snap.docs.map(d=>({
+        const freshData = snap.docs.map(d=>({
           id:d.id,...d.data(),
           timestamp:d.data().timestamp?.toMillis?.()??Date.now(),
           date:d.data().date||new Date().toISOString().split('T')[0]
         }));
+        // For inventory: preserve local restockLog if Firestore doc is missing it (race condition guard)
+        if (key === 'inventory') {
+          freshData.forEach(freshItem => {
+            if (!freshItem.restockLog || freshItem.restockLog.length === 0) {
+              const localItem = state.inventory.find(p=>p.id===freshItem.id);
+              if (localItem && localItem.restockLog && localItem.restockLog.length > 0) {
+                freshItem.restockLog = localItem.restockLog;
+              }
+            }
+          });
+        }
+        state[key] = freshData;
         lsSave(key, state[key]);
         state._lastSync = Date.now(); state._syncError = null;
         loadedCount++;
@@ -1625,53 +2371,77 @@ function setupFirestoreListeners() {
   }
 }
 
-window.addEventListener('firebase-ready', init);
+window.addEventListener('firebase-ready', () => {
+  // Hide the loading overlay
+  const lo = document.getElementById('loading-overlay');
+  if (lo) { lo.style.opacity='0'; setTimeout(()=>lo.style.display='none',400); }
+  // Only init the app if already logged in (session exists)
+  if (checkSessionOnLoad()) {
+    init();
+  }
+  // else: login screen is already showing — init() called after successful login
+});
 
 
 // ═══════════════════════════════════════════════════════════
 //  OFFLINE / LOCALSTORAGE
 // ═══════════════════════════════════════════════════════════
-const LS = { sales:'shades_sales', expenses:'shades_expenses', returns:'shades_returns', pin:'shades_pin' };
-function lsSave(key, data) { try { localStorage.setItem(LS[key]||key, JSON.stringify(data)); } catch(e){} }
-function lsLoad(key) { try { const d=localStorage.getItem(LS[key]||key); return d?JSON.parse(d):null; } catch(e){ return null; } }
-function lsSaveAll() { lsSave('sales',state.sales); lsSave('expenses',state.expenses); lsSave('returns',state.returns); }
-function lsLoadAll() {
-  state.sales    = lsLoad('sales')    || [];
-  state.expenses = lsLoad('expenses') || [];
-  state.returns  = lsLoad('returns')  || [];
-}
-window.addEventListener('online',  () => { window._listenersActive = false; renderSettings(); setupFirestoreListeners(); });
-window.addEventListener('offline', () => { renderSettings(); showToast('You are offline — data saved locally','info'); });
+window.addEventListener('online',  () => { window._listenersActive = false; if (isOwner()) renderSettings(); setupFirestoreListeners(); });
+window.addEventListener('offline', () => { if (isOwner()) renderSettings(); showToast('You are offline — data saved locally','info'); });
 
 // ═══════════════════════════════════════════════════════════
 //  DELETE / EDIT / UPDATE RECORDS
 // ═══════════════════════════════════════════════════════════
 
 
-function changeEditPin() {
-  var current = prompt('Enter current password:');
+function changeStaffPin() {
+  var current = prompt('Enter current Owner PIN to authorise:');
   if (current === null) return;
-  var saved = localStorage.getItem('editDeletePin') || '1245';
-  if (current !== saved) { showToast('Incorrect current password','info'); return; }
-  var newPin = prompt('Enter new password:');
-  if (newPin === null || newPin.trim() === '') return;
-  var confirm2 = prompt('Confirm new password:');
-  if (newPin !== confirm2) { showToast('Passwords do not match','info'); return; }
-  localStorage.setItem('editDeletePin', newPin);
-  showToast('Password updated successfully','success');
+  const storedOwner = lsLoad('pin');
+  const checkAndChange = async () => {
+    let ownerOk = false;
+    if (!storedOwner) { ownerOk = current === '1234'; }
+    else { ownerOk = (await hashPin(current)) === storedOwner; }
+    if (!ownerOk) { showToast('Incorrect Owner PIN','error'); return; }
+    var newPin = prompt('Enter new Staff PIN (4 digits):');
+    if (newPin === null || newPin.trim() === '') return;
+    var confirm2 = prompt('Confirm new Staff PIN:');
+    if (newPin !== confirm2) { showToast('PINs do not match','error'); return; }
+    const hash = await hashPin(newPin);
+    lsSave('staffPin', hash);
+    showToast('Staff PIN updated ✓','success');
+  };
+  checkAndChange();
 }
 
 function requirePin(action) {
-  var pin = prompt('Enter password to continue:');
-  if (pin === null) return; // cancelled
-  var saved = localStorage.getItem('editDeletePin') || '1245';
-  if (pin !== saved) { showToast('Incorrect password','info'); return; }
-  action();
+  if (isStaff()) { showToast('Access restricted — owner only','error'); return; }
+  var pin = prompt('Enter your Owner PIN to confirm:');
+  if (pin === null) return;
+  const storedOwner = lsLoad('pin');
+  const verify = async () => {
+    let ok = false;
+    if (!storedOwner) { ok = pin === '1234'; }
+    else { ok = (await hashPin(pin)) === storedOwner; }
+    if (!ok) { showToast('Incorrect PIN','error'); return; }
+    action();
+  };
+  verify();
 }
 
 async function deleteRecord(coll, id) {
+  if (isStaff()) { showToast('Access restricted — owner only','error'); return; }
   requirePin(async function() {
   if (!confirm('Delete this record? This cannot be undone.')) return;
+  const rec = state[coll].find(r=>r.id===id);
+  // Restore inventory stock if deleting a completed linked sale
+  if (coll === 'sales' && rec && rec.status === 'completed' && rec.invId) {
+    const invIdx = state.inventory.findIndex(p=>p.id===rec.invId);
+    if (invIdx !== -1) {
+      const restored = (state.inventory[invIdx].stock||0) + (rec.qty||0);
+      updateInventoryStock(rec.invId, restored, state.inventory[invIdx]);
+    }
+  }
   const idx = state[coll].findIndex(r=>r.id===id);
   if (idx !== -1) state[coll].splice(idx,1);
   lsSave(coll, state[coll]);
@@ -1686,6 +2456,7 @@ async function deleteRecord(coll, id) {
 }
 
 function editRecord(coll, id) {
+  if (isStaff()) { showToast('Access restricted — owner only','error'); return; }
   requirePin(function() {
   const rec = state[coll].find(r=>r.id===id);
   if (!rec) return;
@@ -1775,6 +2546,25 @@ function updateSale(id) {
   const price=parseFloat(document.getElementById('f-price')?.value)||0;
   const status=document.getElementById('f-status')?.value;
   if(!prod||qty<=0||price<=0){showToast('Fill all fields correctly','error');return;}
+  // Adjust inventory stock for linked sales
+  const old = state.sales.find(r=>r.id===id);
+  if (old && old.invId) {
+    const invIdx = state.inventory.findIndex(p=>p.id===old.invId);
+    if (invIdx !== -1) {
+      const curStock = state.inventory[invIdx].stock||0;
+      if (old.status !== 'completed' && status === 'completed') {
+        // pending → completed: deduct new qty
+        updateInventoryStock(old.invId, Math.max(0, curStock - qty), state.inventory[invIdx]);
+      } else if (old.status === 'completed' && status !== 'completed') {
+        // completed → pending: restore old qty
+        updateInventoryStock(old.invId, curStock + (old.qty||0), state.inventory[invIdx]);
+      } else if (old.status === 'completed' && status === 'completed' && old.qty !== qty) {
+        // Same status completed, but quantity changed: adjust the difference
+        const diff = qty - (old.qty||0);
+        updateInventoryStock(old.invId, Math.max(0, curStock - diff), state.inventory[invIdx]);
+      }
+    }
+  }
   updateRecord('sales',id,{product:prod,qty,price,amount:qty*price,status});
 }
 function updateExpense(id) {
@@ -1794,6 +2584,325 @@ function updateReturn(id) {
 }
 
 // ═══════════════════════════════════════════════════════════
+//  FILL SALE FROM INVENTORY PICKER
+// ═══════════════════════════════════════════════════════════
+function fillSaleFromInv(sel) {
+  const opt = sel.options[sel.selectedIndex];
+  if (!opt || !opt.value) {
+    document.getElementById('f-product').value = '';
+    document.getElementById('f-price').value = '';
+    document.getElementById('f-inv-id').value = '';
+    calcTotal(); return;
+  }
+  document.getElementById('f-product').value = opt.dataset.name || '';
+  document.getElementById('f-price').value = opt.dataset.price || '';
+  document.getElementById('f-inv-id').value = opt.value;
+  calcTotal();
+}
+
+// ═══════════════════════════════════════════════════════════
+//  INVENTORY — SAVE / UPDATE STOCK
+// ═══════════════════════════════════════════════════════════
+async function saveProduct() {
+  const name   = document.getElementById('f-pname')?.value?.trim();
+  const cat    = document.getElementById('f-pcat')?.value;
+  const sku    = document.getElementById('f-psku')?.value?.trim();
+  const cost   = parseFloat(document.getElementById('f-pcost')?.value)||0;
+  const sell   = parseFloat(document.getElementById('f-psell')?.value)||0;
+  const stock  = parseInt(document.getElementById('f-pstock')?.value)||0;
+  const low    = parseInt(document.getElementById('f-plow')?.value)||5;
+  const desc   = document.getElementById('f-pdesc')?.value?.trim();
+  if (!name) { showToast('Product name is required','error'); return; }
+  const today  = new Date().toISOString().split('T')[0];
+  const id     = 'inv-' + Date.now();
+  const rec    = { id, name, category:cat, sku, costPrice:cost, sellPrice:sell, stock, lowThreshold:low, description:desc, date:today, timestamp:Date.now(), restockLog:[] };
+  state.inventory.unshift(rec);
+  lsSave('inventory', state.inventory);
+  if (!window._DEMO && window._db) {
+    try {
+      const { id:rid, ...data } = rec;
+      const docRef = await window._fs.addDoc(window._fs.collection(window._db,'inventory'), {...data, timestamp:window._fs.serverTimestamp()});
+      const idx = state.inventory.findIndex(r=>r.id===id);
+      if (idx !== -1) { state.inventory[idx].id = docRef.id; lsSave('inventory', state.inventory); }
+    } catch(e) { showToast('Saved locally — cloud sync failed','info'); }
+  }
+  closeModal();
+  showToast('Product added ✓','success');
+  renderInventory();
+  updateInvNavBadge();
+}
+
+async function updateInventoryStock(id, newStock, existing) {
+  const idx = state.inventory.findIndex(r=>r.id===id);
+  if (idx === -1) return;
+  state.inventory[idx].stock = newStock;
+  lsSave('inventory', state.inventory);
+  if (!window._DEMO && window._db) {
+    try { await window._fs.updateDoc(window._fs.doc(window._db,'inventory',id), {stock:newStock}); }
+    catch(e) {}
+  }
+  updateInvNavBadge();
+}
+
+function openRestockModal(id) {
+  const prod = state.inventory.find(p=>p.id===id);
+  if (!prod) return;
+  const overlay = document.getElementById('modal-overlay');
+  document.getElementById('modal-title').textContent = `📥 Restock — ${prod.name}`;
+  document.getElementById('modal-body').innerHTML = `
+    <div style="display:flex;gap:14px;margin-bottom:16px">
+      <div class="mini-stat" style="flex:1"><div class="mini-stat-val" style="color:${prod.stock<=0?'var(--red)':prod.stock<=prod.lowThreshold?'var(--yellow)':'var(--green)'}">${prod.stock}</div><div class="mini-stat-lbl">Current Stock</div></div>
+      <div class="mini-stat" style="flex:1"><div class="mini-stat-val" style="color:var(--muted)">${prod.lowThreshold}</div><div class="mini-stat-lbl">Low Alert</div></div>
+      ${prod.costPrice ? `<div class="mini-stat" style="flex:1"><div class="mini-stat-val" style="color:var(--accent)">K${(prod.costPrice).toFixed(2)}</div><div class="mini-stat-lbl">Cost Price</div></div>` : ''}
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Add Qty</label>
+        <input class="form-input" id="f-rst-qty" type="number" min="1" value="10" placeholder="Units received"/>
+      </div>
+      <div class="form-group"><label class="form-label">New Cost Price (K) <span style="color:var(--muted);font-weight:400">optional</span></label>
+        <input class="form-input" id="f-rst-cost" type="number" step="0.01" min="0" placeholder="${(prod.costPrice||0).toFixed(2)}" value="${prod.costPrice||''}"/>
+      </div>
+    </div>
+    <div class="form-group"><label class="form-label">Note (optional)</label>
+      <input class="form-input" id="f-rst-note" placeholder="e.g. Supplier: ABC Wholesale"/>
+    </div>
+    ${prod.restockLog && prod.restockLog.length ? `
+      <div style="margin-bottom:8px;font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:0.4px">Restock History</div>
+      <div class="restock-log">${[...prod.restockLog].reverse().slice(0,6).map(l=>`<div class="restock-log-item">+${l.qty} units · ${l.date}${l.note?' · '+l.note:''}</div>`).join('')}</div>
+    ` : ''}
+    <button class="btn btn-success" style="width:100%;justify-content:center;padding:12px;margin-top:12px" onclick="confirmRestock('${id}')">
+      ✅ Confirm Restock
+    </button>
+  `;
+  overlay.classList.add('open');
+}
+
+async function confirmRestock(id) {
+  const addQty  = parseInt(document.getElementById('f-rst-qty')?.value)||0;
+  const newCost = parseFloat(document.getElementById('f-rst-cost')?.value)||null;
+  const note    = document.getElementById('f-rst-note')?.value?.trim();
+  if (addQty <= 0) { showToast('Enter a valid quantity','error'); return; }
+  const idx = state.inventory.findIndex(p=>p.id===id);
+  if (idx === -1) return;
+  const prod = state.inventory[idx];
+  // Warn if cost price changed
+  if (newCost !== null && newCost > 0 && newCost !== prod.costPrice) {
+    const ok = confirm(`Cost price changing from K${(prod.costPrice||0).toFixed(2)} → K${newCost.toFixed(2)}. Continue?`);
+    if (!ok) return;
+  }
+  const today = new Date().toISOString().split('T')[0];
+  const newStock = (prod.stock||0) + addQty;
+  const logEntry = { qty:addQty, date:today, note:note||'' };
+  const restockLog = [...(prod.restockLog||[]), logEntry];
+  const updates = { stock:newStock, restockLog };
+  if (newCost !== null && newCost > 0) updates.costPrice = newCost;
+  state.inventory[idx] = {...prod, ...updates};
+  lsSave('inventory', state.inventory);
+  if (!window._DEMO && window._db) {
+    try { await window._fs.updateDoc(window._fs.doc(window._db,'inventory',id), updates); }
+    catch(e) { showToast('Restocked locally — cloud sync failed','info'); }
+  }
+  closeModal();
+  showToast(`+${addQty} units added ✓`,'success');
+  renderInventory();
+  updateInvNavBadge();
+}
+
+function openEditProductModal(id) {
+  requirePin(function() {
+    const p = state.inventory.find(pr=>pr.id===id);
+    if (!p) return;
+    const cats = ['T-Shirts','Jackets','Trousers','Shorts','Dresses','Hoodies','Shoes','Accessories','Other'];
+    document.getElementById('modal-title').textContent = '✏️ Edit Product';
+    document.getElementById('modal-body').innerHTML = `
+      <div class="form-group"><label class="form-label">Product Name</label>
+        <input class="form-input" id="f-pname" value="${p.name}"/>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Category</label>
+          <select class="form-input" id="f-pcat">${cats.map(c=>`<option ${c===p.category?'selected':''}>${c}</option>`).join('')}</select>
+        </div>
+        <div class="form-group"><label class="form-label">SKU / Code</label>
+          <input class="form-input" id="f-psku" value="${p.sku||''}"/>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Cost Price (K)</label>
+          <input class="form-input" id="f-pcost" type="number" step="0.01" value="${p.costPrice||0}"/>
+        </div>
+        <div class="form-group"><label class="form-label">Selling Price (K)</label>
+          <input class="form-input" id="f-psell" type="number" step="0.01" value="${p.sellPrice||0}"/>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Current Stock</label>
+          <input class="form-input" id="f-pstock" type="number" min="0" value="${p.stock||0}"/>
+        </div>
+        <div class="form-group"><label class="form-label">Low Stock Alert</label>
+          <input class="form-input" id="f-plow" type="number" min="0" value="${p.lowThreshold||5}"/>
+        </div>
+      </div>
+      <div class="form-group"><label class="form-label">Description</label>
+        <input class="form-input" id="f-pdesc" value="${p.description||''}"/>
+      </div>
+      <button class="btn btn-primary" style="width:100%;justify-content:center;padding:12px" onclick="saveEditProduct('${id}')">Update Product</button>
+    `;
+    document.getElementById('modal-overlay').classList.add('open');
+  });
+}
+
+async function saveEditProduct(id) {
+  const name  = document.getElementById('f-pname')?.value?.trim();
+  const cat   = document.getElementById('f-pcat')?.value;
+  const sku   = document.getElementById('f-psku')?.value?.trim();
+  const cost  = parseFloat(document.getElementById('f-pcost')?.value)||0;
+  const sell  = parseFloat(document.getElementById('f-psell')?.value)||0;
+  const stock = parseInt(document.getElementById('f-pstock')?.value)||0;
+  const low   = parseInt(document.getElementById('f-plow')?.value)||5;
+  const desc  = document.getElementById('f-pdesc')?.value?.trim();
+  if (!name) { showToast('Product name required','error'); return; }
+  const updates = { name, category:cat, sku, costPrice:cost, sellPrice:sell, stock, lowThreshold:low, description:desc };
+  const idx = state.inventory.findIndex(p=>p.id===id);
+  if (idx !== -1) { state.inventory[idx] = {...state.inventory[idx], ...updates}; lsSave('inventory', state.inventory); }
+  if (!window._DEMO && window._db) {
+    try { await window._fs.updateDoc(window._fs.doc(window._db,'inventory',id), updates); }
+    catch(e) { showToast('Updated locally — cloud sync failed','info'); }
+  }
+  closeModal();
+  showToast('Product updated ✓','success');
+  renderInventory();
+  updateInvNavBadge();
+}
+
+async function deleteProduct(id) {
+  requirePin(async function() {
+    if (!confirm('Delete this product? This cannot be undone.')) return;
+    const idx = state.inventory.findIndex(p=>p.id===id);
+    if (idx !== -1) state.inventory.splice(idx,1);
+    lsSave('inventory', state.inventory);
+    if (!window._DEMO && window._db) {
+      try { await window._fs.deleteDoc(window._fs.doc(window._db,'inventory',id)); }
+      catch(e) {}
+    }
+    showToast('Product deleted','info');
+    renderInventory();
+    updateInvNavBadge();
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+//  INVENTORY — RENDER
+// ═══════════════════════════════════════════════════════════
+function setInvFilter(f, btn) {
+  state.invFilter = f;
+  document.querySelectorAll('.inv-filter-btn').forEach(b=>b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderInventory();
+}
+
+function updateInvNavBadge() {
+  const lowCount = state.inventory.filter(p=>p.stock>0 && p.stock<=p.lowThreshold).length;
+  const outCount = state.inventory.filter(p=>p.stock<=0).length;
+  const total = lowCount + outCount;
+  const badge = document.getElementById('inv-low-badge');
+  if (badge) { badge.textContent = total; badge.style.display = total>0 ? 'inline' : 'none'; }
+}
+
+function renderInventory() {
+  // Sync the inventory-section search input with state.search
+  const invSearchEl = document.getElementById('inv-search-input');
+  if (invSearchEl && invSearchEl.value !== state.search) invSearchEl.value = state.search;
+
+  const total = state.inventory.length;
+  const inStock = state.inventory.filter(p=>p.stock>p.lowThreshold).length;
+  const low = state.inventory.filter(p=>p.stock>0&&p.stock<=p.lowThreshold).length;
+  const out = state.inventory.filter(p=>p.stock<=0).length;
+  const totalValue = state.inventory.reduce((s,p)=>(s+(p.stock||0)*(p.costPrice||0)),0);
+
+  document.getElementById('inv-summary-bar').innerHTML = `
+    <div class="mini-stat"><div class="mini-stat-val" style="color:var(--accent)">${total}</div><div class="mini-stat-lbl">Products</div></div>
+    <div class="mini-stat"><div class="mini-stat-val" style="color:var(--green)">${inStock}</div><div class="mini-stat-lbl">In Stock</div></div>
+    <div class="mini-stat"><div class="mini-stat-val" style="color:var(--yellow)">${low}</div><div class="mini-stat-lbl">Low Stock</div></div>
+    <div class="mini-stat"><div class="mini-stat-val" style="color:var(--red)">${out}</div><div class="mini-stat-lbl">Out of Stock</div></div>
+    <div class="mini-stat"><div class="mini-stat-val" style="color:var(--purple)">K${fmt(totalValue)}</div><div class="mini-stat-lbl">Stock Value</div></div>
+  `;
+
+  let list = [...state.inventory];
+  // Search filter
+  if (state.search) {
+    const q = state.search.toLowerCase();
+    list = list.filter(p=>(p.name||'').toLowerCase().includes(q)||(p.category||'').toLowerCase().includes(q)||(p.sku||'').toLowerCase().includes(q));
+  }
+  if (state.invFilter === 'low')  list = list.filter(p=>p.stock>0&&p.stock<=(p.lowThreshold||5));
+  if (state.invFilter === 'out')  list = list.filter(p=>p.stock<=0);
+  if (state.invFilter === 'ok')   list = list.filter(p=>p.stock>(p.lowThreshold||5));
+
+  if (!list.length) {
+    document.getElementById('inv-grid').innerHTML = `
+      <div class="inv-empty" style="grid-column:1/-1">
+        <div class="inv-empty-icon">📦</div>
+        <div style="font-family:var(--font-head);font-size:17px;font-weight:700;margin-bottom:6px">
+          ${state.search ? 'No products match "' + state.search + '"' : state.invFilter !== 'all' ? 'No products match this filter' : 'No products yet'}
+        </div>
+        <div style="font-size:13px;color:var(--muted)">
+          ${state.search ? 'Try a different search term' : state.invFilter !== 'all' ? 'Try a different filter' : 'Click "Add Product" to start building your catalog'}
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  document.getElementById('inv-grid').innerHTML = list.map((p,i) => {
+    const pct = p.lowThreshold > 0 ? Math.min(100, (p.stock / (p.lowThreshold * 3)) * 100) : (p.stock > 0 ? 100 : 0);
+    const barColor = p.stock <= 0 ? 'var(--muted)' : p.stock <= p.lowThreshold ? 'var(--yellow)' : 'var(--green)';
+    const margin = p.sellPrice > 0 && p.costPrice > 0 ? (((p.sellPrice - p.costPrice) / p.sellPrice) * 100).toFixed(0) : null;
+    const badge = p.stock <= 0
+      ? `<span class="inv-out-badge">OUT</span>`
+      : p.stock <= p.lowThreshold
+        ? `<span class="inv-low-badge">LOW</span>`
+        : '';
+    return `
+      <div class="inv-card" style="animation-delay:${i*40}ms">
+        ${badge}
+        <div class="inv-card-top">
+          <div>
+            <div class="inv-card-name">${p.name}</div>
+            <div class="inv-card-cat">${p.category}${p.sku?' · '+p.sku:''}</div>
+          </div>
+        </div>
+        <div class="inv-stock-big" style="color:${barColor}">${p.stock}</div>
+        <div class="inv-stock-lbl">units in stock</div>
+        <div class="stock-bar-wrap">
+          <div class="stock-bar-fill" style="width:${pct}%;background:${barColor}"></div>
+        </div>
+        <div class="inv-card-prices">
+          <div class="inv-price-box">
+            <div class="inv-price-label">Cost</div>
+            <div class="inv-price-val" style="color:var(--muted)">K${(p.costPrice||0).toFixed(2)}</div>
+          </div>
+          <div class="inv-price-box">
+            <div class="inv-price-label">Sell</div>
+            <div class="inv-price-val" style="color:var(--green)">K${(p.sellPrice||0).toFixed(2)}</div>
+          </div>
+          ${margin !== null ? `<div class="inv-price-box">
+            <div class="inv-price-label">Margin</div>
+            <div class="inv-price-val" style="color:var(--accent)">${margin}%</div>
+          </div>` : ''}
+        </div>
+        <div class="inv-card-actions">
+          <button class="inv-restock-btn" onclick="openRestockModal('${p.id}')">📥 Restock</button>
+          <button class="action-btn edit" onclick="openEditProductModal('${p.id}')">✏️</button>
+          <button class="action-btn del"  onclick="deleteProduct('${p.id}')">🗑️</button>
+        </div>
+        ${p.description ? `<div style="font-size:11px;color:var(--muted);margin-top:8px;font-style:italic">${p.description}</div>` : ''}
+      </div>
+    `;
+  }).join('');
+
+  updateInvNavBadge();
+}
+
+// ═══════════════════════════════════════════════════════════
 //  SETTINGS RENDER
 // ═══════════════════════════════════════════════════════════
 function renderSettings() {
@@ -1806,12 +2915,24 @@ function renderSettings() {
     <div class="settings-card">
       <div class="settings-card-title">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-        Reports PIN
+        Owner Login PIN
       </div>
-      <div class="settings-card-desc">Change the 4-digit PIN required to access the Reports section.</div>
+      <div class="settings-card-desc">Change the 4-digit PIN used by the owner to log in, access Reports, and confirm edits or deletions. Your PIN is stored securely as a hash — it cannot be read from DevTools.</div>
       <button class="btn btn-primary" onclick="startChangePin()">
         <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
-        Change PIN
+        Change Owner PIN
+      </button>
+    </div>
+
+    <div class="settings-card">
+      <div class="settings-card-title">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Staff Login PIN
+      </div>
+      <div class="settings-card-desc">Set the PIN your staff use to log in. Staff can record sales, expenses and returns but cannot edit/delete records, view Reports, Inventory management, or Settings.<br><br><span style="color:var(--muted);font-size:11px">Default staff PIN: <strong style="color:var(--accent)">0000</strong></span></div>
+      <button class="btn btn-primary" onclick="changeStaffPin()">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+        Change Staff PIN
       </button>
     </div>
 
@@ -1831,7 +2952,7 @@ function renderSettings() {
         ${online && !permErr ? '● Syncing' : permErr ? '⚠️ Rules error' : '◉ Offline'}
       </div>
       <div id="last-sync-time" style="font-size:11px;color:var(--muted);margin-top:6px">Last sync: ${syncTime}</div>
-      <div style="font-size:12px;color:var(--muted);margin-top:8px">${state.sales.length} sales · ${state.expenses.length} expenses · ${state.returns.length} returns</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:8px">${state.sales.length} sales · ${state.expenses.length} expenses · ${state.returns.length} returns · ${state.inventory.length} products</div>
     </div>
 
     <div class="settings-card">
@@ -1856,18 +2977,6 @@ function renderSettings() {
       </div>
     </div>
 
-
-    <div class="settings-card">
-      <div class="settings-card-title">
-        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-        Edit / Delete Password
-      </div>
-      <div class="settings-card-desc">Change the password required to edit or delete any record.</div>
-      <button class="btn btn-primary" onclick="changeEditPin()">
-        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
-        Change Password
-      </button>
-    </div>
 
     <div class="settings-card">
       <div class="settings-card-title">
@@ -1909,13 +3018,13 @@ async function clearAllData() {
   if (!window._DEMO && window._db) {
     try {
       const {collection,getDocs,deleteDoc,doc} = window._fs;
-      for (const coll of ['sales','expenses','returns']) {
+      for (const coll of ['sales','expenses','returns','inventory']) {
         const snap = await getDocs(collection(window._db, coll));
         for (const d of snap.docs) await deleteDoc(doc(window._db, coll, d.id));
       }
     } catch(e) { showToast('Local cleared, cloud delete failed: ' + e.message,'info'); }
   }
-  state.sales=[]; state.expenses=[]; state.returns=[];
+  state.sales=[]; state.expenses=[]; state.returns=[]; state.inventory=[];
   lsSaveAll();
   showToast('All data cleared','info');
   renderNotifications();
