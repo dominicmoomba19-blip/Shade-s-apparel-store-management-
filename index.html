@@ -1188,7 +1188,9 @@ function selectLoginRole(role) {
   _loginRole = role; _loginBuf = '';
   document.getElementById('login-tab-owner').classList.toggle('active', role==='owner');
   document.getElementById('login-tab-staff').classList.toggle('active', role==='staff');
-  document.getElementById('login-pin-label').textContent = role==='owner' ? 'Enter Owner PIN' : 'Enter Staff PIN';
+  const lbl = document.getElementById('login-pin-label');
+  lbl.textContent = role==='owner' ? 'Enter Owner PIN' : 'Enter Staff PIN';
+  lbl.style.removeProperty('color');
   document.getElementById('login-error').textContent = '';
   _updateLoginDots(false);
 }
@@ -1254,12 +1256,13 @@ function showForgotPin() {
   localStorage.removeItem('shades_pin');
   _loginBuf = '';
   _updateLoginDots(false);
+  const lbl = document.getElementById('login-pin-label');
   document.getElementById('login-error').textContent = '';
-  document.getElementById('login-pin-label').textContent = 'PIN reset — enter default PIN';
-  document.getElementById('login-pin-label').style.color = 'var(--green)';
+  lbl.textContent = 'PIN reset — enter default PIN';
+  lbl.style.color = 'var(--green)';
   setTimeout(() => {
-    document.getElementById('login-pin-label').textContent = 'Enter Owner PIN';
-    document.getElementById('login-pin-label').style.color = '';
+    const lbl = document.getElementById('login-pin-label');
+    if (lbl) { lbl.textContent = 'Enter Owner PIN'; lbl.style.removeProperty('color'); }
   }, 3000);
 }
 
