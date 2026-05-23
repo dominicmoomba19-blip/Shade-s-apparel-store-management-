@@ -861,6 +861,9 @@ tbody td { padding: 12px 16px; color: var(--text); font-size: 13.5px; }
       <button class="login-key del" onclick="loginDel()">⌫</button>
     </div>
     <div class="login-hint" id="login-hint">Owner: full access &nbsp;·&nbsp; Staff: sales, expenses &amp; returns</div>
+    <div id="forgot-pin-wrap" style="margin-top:14px;text-align:center">
+      <button onclick="showForgotPin()" style="background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;font-family:var(--font-body);text-decoration:underline;padding:0">Forgot PIN?</button>
+    </div>
   </div>
 </div>
 
@@ -1238,6 +1241,26 @@ async function _checkLoginPin() {
   } else {
     _loginShake('Incorrect PIN — try again');
   }
+}
+
+function showForgotPin() {
+  // Only relevant for owner role
+  if (_loginRole !== 'owner') {
+    alert('Contact the store owner to reset the staff PIN.');
+    return;
+  }
+  const confirmed = confirm('Reset owner PIN to default (1234)?\n\nThis will clear your saved PIN from this device. You can set a new one in Settings after logging in.');
+  if (!confirmed) return;
+  localStorage.removeItem('shades_pin');
+  _loginBuf = '';
+  _updateLoginDots(false);
+  document.getElementById('login-error').textContent = '';
+  document.getElementById('login-pin-label').textContent = 'PIN reset! Default is 1234';
+  document.getElementById('login-pin-label').style.color = 'var(--green)';
+  setTimeout(() => {
+    document.getElementById('login-pin-label').textContent = 'Enter Owner PIN';
+    document.getElementById('login-pin-label').style.color = '';
+  }, 3000);
 }
 
 function applySessionUI() {
