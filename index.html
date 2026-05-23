@@ -1249,13 +1249,13 @@ function showForgotPin() {
     alert('Contact the store owner to reset the staff PIN.');
     return;
   }
-  const confirmed = confirm('Reset owner PIN to default (1234)?\n\nThis will clear your saved PIN from this device. You can set a new one in Settings after logging in.');
+  const confirmed = confirm('Reset owner PIN?\n\nThis will clear your saved PIN from this device. Contact the store owner for the default PIN.');
   if (!confirmed) return;
   localStorage.removeItem('shades_pin');
   _loginBuf = '';
   _updateLoginDots(false);
   document.getElementById('login-error').textContent = '';
-  document.getElementById('login-pin-label').textContent = 'PIN reset! Default is 1234';
+  document.getElementById('login-pin-label').textContent = 'PIN reset — enter default PIN';
   document.getElementById('login-pin-label').style.color = 'var(--green)';
   setTimeout(() => {
     document.getElementById('login-pin-label').textContent = 'Enter Owner PIN';
