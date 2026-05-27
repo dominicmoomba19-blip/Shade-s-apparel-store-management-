@@ -907,6 +907,73 @@ tbody td { padding: 12px 16px; color: var(--text); font-size: 13.5px; }
   }
 }
 </style>
+<script>
+// ═══════════════════════════════════════════════════════════
+//  SERVICE WORKER — offline-first app shell caching
+// ═══════════════════════════════════════════════════════════
+if ('serviceWorker' in navigator) {
+  const SW_VERSION = 'shades-v3';
+  const swCode = `
+const CACHE = '${SW_VERSION}';
+const ASSETS = [
+  self.location.pathname,
+  'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Epilogue:wght@300;400;500;600;700&display=swap',
+  'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js'
+];
+
+self.addEventListener('install', e => {
+  e.waitUntil(
+    caches.open(CACHE).then(c => c.addAll(ASSETS).catch(()=>{}))
+  );
+  self.skipWaiting();
+});
+
+self.addEventListener('activate', e => {
+  e.waitUntil(
+    caches.keys().then(keys =>
+      Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))
+    )
+  );
+  self.clients.claim();
+});
+
+self.addEventListener('fetch', e => {
+  const url = e.request.url;
+  // Never intercept Firestore or Google APIs — let those go through normally
+  if (url.includes('firestore.googleapis.com') ||
+      url.includes('firebase') ||
+      url.includes('googleapis.com/identitytoolkit') ||
+      url.includes('securetoken')) return;
+
+  e.respondWith(
+    caches.match(e.request).then(cached => {
+      if (cached) return cached;
+      return fetch(e.request).then(response => {
+        // Cache successful GET responses
+        if (e.request.method === 'GET' && response.status === 200) {
+          const clone = response.clone();
+          caches.open(CACHE).then(c => c.put(e.request, clone));
+        }
+        return response;
+      }).catch(() => caches.match(e.request)); // fallback to cache on network fail
+    })
+  );
+});
+  `;
+  const blob = new Blob([swCode], {type:'text/javascript'});
+  const swUrl = URL.createObjectURL(blob);
+  navigator.serviceWorker.register(swUrl, {scope: '/'})
+    .then(reg => {
+      console.log('SW registered');
+      // Flush sync queue after SW ready
+      reg.addEventListener('updatefound', () => {});
+    })
+    .catch(e => console.warn('SW registration failed:', e));
+
+  // Flush queue on page load if online
+  window.addEventListener('load', () => { if (navigator.onLine) setTimeout(sqFlush, 2000); });
+}
+</script>
 </head>
 <body>
 
@@ -1126,6 +1193,7 @@ tbody td { padding: 12px 16px; color: var(--text); font-size: 13.5px; }
         <input type="date" id="date-from" class="date-filter" style="width:130px;cursor:pointer" title="From date" onchange="onDateRange()" placeholder="From"/>
         <input type="date" id="date-to" class="date-filter" style="width:130px;cursor:pointer" title="To date" onchange="onDateRange()" placeholder="To"/>
         <div id="sync-dot" title="Sync status" style="width:8px;height:8px;border-radius:50%;background:var(--muted);margin-right:2px;transition:background 0.4s;cursor:pointer;padding:8px;box-sizing:content-box;margin:-8px 2px -8px -8px" onclick="navigate('settings',null)"></div>
+        <div id="offline-badge" title="Unsynced changes" style="display:none;font-size:10px;font-weight:800;background:var(--yellow);color:#000;border-radius:20px;padding:2px 7px;cursor:pointer" onclick="navigate('settings',null)">⏳ Unsynced</div>
         <button class="icon-btn" onclick="toggleTheme()" title="Toggle theme">
           <svg id="theme-icon" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
         </button>
@@ -2449,23 +2517,74 @@ function calcTotal() {
 // ═══════════════════════════════════════════════════════════
 //  SAVE RECORDS
 // ═══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
+//  SYNC QUEUE — queues offline writes, retries when online
+// ═══════════════════════════════════════════════════════════
+const SQ_KEY = 'shades_sync_queue';
+function sqLoad()  { try { return JSON.parse(localStorage.getItem(SQ_KEY)||'[]'); } catch(e){ return []; } }
+function sqSave(q) { try { localStorage.setItem(SQ_KEY, JSON.stringify(q)); } catch(e){} }
+function sqUpdateBadge() {
+  const badge = document.getElementById('offline-badge');
+  if (!badge) return;
+  const n = sqLoad().length;
+  badge.style.display = n > 0 ? 'flex' : 'none';
+  badge.textContent = `⏳ ${n} unsynced`;
+}
+function sqAdd(op) { const q=sqLoad(); q.push(op); sqSave(q); sqUpdateBadge(); }
+
+async function sqFlush() {
+  if (!navigator.onLine || window._DEMO || !window._db) return;
+  const q = sqLoad();
+  if (!q.length) return;
+  const failed = [];
+  for (const op of q) {
+    try {
+      if (op.type === 'add') {
+        const {id, ...data} = op.data;
+        const docRef = await window._fs.addDoc(window._fs.collection(window._db, op.coll), {...data, timestamp:window._fs.serverTimestamp()});
+        // Update local ID to Firestore ID
+        const idx = state[op.coll]?.findIndex(r=>r.id===op.data.id);
+        if (idx > -1) { state[op.coll][idx].id = docRef.id; lsSave(op.coll, state[op.coll]); }
+      } else if (op.type === 'update') {
+        await window._fs.updateDoc(window._fs.doc(window._db, op.coll, op.id), op.updates);
+      } else if (op.type === 'delete') {
+        await window._fs.deleteDoc(window._fs.doc(window._db, op.coll, op.id));
+      }
+    } catch(e) { failed.push(op); }
+  }
+  sqSave(failed);
+  sqUpdateBadge();
+  if (failed.length === 0 && q.length > 0) {
+    showToast(`✓ ${q.length} offline change${q.length>1?'s':''} synced to cloud`, 'success');
+    const dot = document.getElementById('sync-dot');
+    if (dot) { dot.style.background='var(--green)'; dot.title='Synced ✓'; }
+  }
+}
+
 async function saveRecord(collection, record) {
   const today = new Date().toISOString().split('T')[0];
   const rec = {...record, date:today, timestamp:Date.now(), id:`${collection}-${Date.now()}`};
-  // Save locally first — always works offline
+  // Save locally FIRST — instant, always works
   state[collection].unshift(rec);
   lsSave(collection, state[collection]);
-  // Then push to Firestore if available
+  // Push to Firestore if online, otherwise queue
   if (!window._DEMO && window._db) {
-    try {
-      const {id, ...data} = rec;
-      const docRef = await window._fs.addDoc(window._fs.collection(window._db, collection), {...data, timestamp:window._fs.serverTimestamp()});
-      const idx = state[collection].findIndex(r => r.id === rec.id);
-      if (idx !== -1) { state[collection][idx].id = docRef.id; lsSave(collection, state[collection]); }
-    } catch(e) { showToast('Saved locally — cloud sync failed','info'); }
+    if (navigator.onLine) {
+      try {
+        const {id, ...data} = rec;
+        const docRef = await window._fs.addDoc(window._fs.collection(window._db, collection), {...data, timestamp:window._fs.serverTimestamp()});
+        const idx = state[collection].findIndex(r => r.id === rec.id);
+        if (idx !== -1) { state[collection][idx].id = docRef.id; lsSave(collection, state[collection]); }
+      } catch(e) {
+        sqAdd({type:'add', coll:collection, data:rec});
+        showToast('Saved offline — will sync when connected','info');
+      }
+    } else {
+      sqAdd({type:'add', coll:collection, data:rec});
+    }
   }
   closeModal();
-  showToast('Record saved successfully','success');
+  showToast('Record saved','success');
   renderNotifications();
   renderSection(getCurrentSection());
   return rec;
@@ -2775,6 +2894,7 @@ function init() {
   renderNotifications();
   renderDashboard();
   updateInvNavBadge();
+  sqUpdateBadge(); // show unsynced badge if any queued items
   setupFirestoreListeners();
 }
 
@@ -2860,7 +2980,13 @@ window.addEventListener('firebase-ready', () => {
 // ═══════════════════════════════════════════════════════════
 //  OFFLINE / LOCALSTORAGE
 // ═══════════════════════════════════════════════════════════
-window.addEventListener('online',  () => { window._listenersActive = false; if (isOwner()) renderSettings(); setupFirestoreListeners(); });
+window.addEventListener('online',  () => {
+  window._listenersActive = false;
+  if (isOwner()) renderSettings();
+  setupFirestoreListeners();
+  sqFlush(); // push queued offline changes
+  showToast('Back online — syncing...','info');
+});
 window.addEventListener('offline', () => { if (isOwner()) renderSettings(); showToast('You are offline — data saved locally','info'); });
 
 // ═══════════════════════════════════════════════════════════
@@ -3006,8 +3132,12 @@ async function updateRecord(coll, id, updates) {
   state[coll][idx] = {...state[coll][idx], ...updates};
   lsSave(coll, state[coll]);
   if (!window._DEMO && window._db) {
-    try { await window._fs.updateDoc(window._fs.doc(window._db,coll,id), updates); }
-    catch(e) { showToast('Updated locally (cloud sync failed)','info'); }
+    if (navigator.onLine) {
+      try { await window._fs.updateDoc(window._fs.doc(window._db,coll,id), updates); }
+      catch(e) { sqAdd({type:'update', coll, id, updates}); showToast('Updated offline — will sync when connected','info'); }
+    } else {
+      sqAdd({type:'update', coll, id, updates});
+    }
   }
   closeModal();
   showToast('Record updated','success');
