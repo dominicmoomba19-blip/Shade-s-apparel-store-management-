@@ -427,6 +427,7 @@ thead th {
 }
 tbody tr { border-top: 1px solid var(--border); transition: background 0.12s; }
 tbody tr:hover { background: rgba(79,142,247,0.05); }
+tbody tr.row-selected { background: rgba(79,142,247,0.10) !important; }
 tbody td { padding: 12px 16px; color: var(--text); font-size: 13.5px; }
 .empty-row td { text-align: center; color: var(--muted); padding: 40px; }
 
@@ -1157,7 +1158,13 @@ tbody td { padding: 12px 16px; color: var(--text); font-size: 13.5px; }
         </div>
         <div class="table-card">
           <div class="table-header"><h3>Sales Records</h3><span id="sales-count" style="font-size:12px;color:var(--muted)"></span></div>
-          <div style="overflow-x:auto"><table><thead><tr><th>Product</th><th>Qty</th><th>Price (K)</th><th>Amount (K)</th><th>Date</th><th>Status</th><th></th></tr></thead><tbody id="sales-tbody"></tbody></table></div>
+          <div id="bulk-bar" style="display:none;align-items:center;gap:10px;padding:10px 16px;background:rgba(79,142,247,0.08);border-bottom:1px solid var(--border);flex-wrap:wrap;">
+            <span id="bulk-count" style="font-size:13px;font-weight:700;color:var(--accent)"></span>
+            <button class="btn btn-primary" style="padding:7px 14px;font-size:12px" onclick="bulkComplete()">&#10003; Mark Completed</button>
+            <button class="btn" style="padding:7px 14px;font-size:12px;background:rgba(245,54,92,0.12);color:var(--red);border:1px solid rgba(245,54,92,0.3)" onclick="bulkDelete()">&#128465; Delete</button>
+            <button class="btn" style="padding:7px 14px;font-size:12px;background:var(--card2);color:var(--muted);border:1px solid var(--border);margin-left:auto" onclick="clearSelection()">&#10005; Deselect All</button>
+          </div>
+          <div style="overflow-x:auto"><table><thead><tr><th style="width:36px"><input type="checkbox" id="select-all-sales" onchange="toggleSelectAll(this)" style="accent-color:var(--accent);width:15px;height:15px;cursor:pointer"></th><th>Product</th><th>Qty</th><th>Price (K)</th><th>Amount (K)</th><th>Date</th><th>Status</th><th></th></tr></thead><tbody id="sales-tbody"></tbody></table></div>
         </div>
       </div>
 
@@ -1788,7 +1795,8 @@ function renderSales() {
   `;
   document.getElementById('sales-count').textContent = `${filtered.length} records`;
   document.getElementById('sales-tbody').innerHTML = pageItems.length?pageItems.map(s=>`
-    <tr>
+    <tr data-id="${s.id}" class="${state.selectedSales&&state.selectedSales.has(s.id)?'row-selected':''}">
+      <td><input type="checkbox" class="sale-cb" data-id="${s.id}" onchange="onSaleCheck(this)" ${state.selectedSales&&state.selectedSales.has(s.id)?'checked':''} style="accent-color:var(--accent);width:15px;height:15px;cursor:pointer"></td>
       <td style="font-weight:600">${s.product}</td>
       <td style="color:var(--muted)">${s.qty}</td>
       <td style="color:var(--muted)">${(s.price||0).toFixed(2)}</td>
@@ -1802,7 +1810,7 @@ function renderSales() {
         <button class="action-btn del"  onclick="deleteRecord('sales','${s.id}')">🗑️</button>
       </div></td>
     </tr>
-  `).join(''):`<tr class="empty-row"><td colspan="7">No sales records found</td></tr>`;
+  `).join(''):`<tr class="empty-row"><td colspan="8">No sales records found</td></tr>`;
 
   // Pagination controls
   let paginationHtml = '';
@@ -2266,6 +2274,98 @@ function openModal(type) {
   }
   overlay.classList.add('open');
 }
+// ═══════════════════════════════════════════════════════════
+//  MULTI-SELECT SALES
+// ═══════════════════════════════════════════════════════════
+if (!state.selectedSales) state.selectedSales = new Set();
+
+function onSaleCheck(cb) {
+  const id = cb.dataset.id;
+  if (cb.checked) state.selectedSales.add(id);
+  else state.selectedSales.delete(id);
+  updateBulkBar();
+  // update row highlight
+  const row = cb.closest('tr');
+  if (row) row.classList.toggle('row-selected', cb.checked);
+  // update select-all checkbox state
+  const all = document.querySelectorAll('.sale-cb');
+  const selectAll = document.getElementById('select-all-sales');
+  if (selectAll) {
+    selectAll.checked = all.length > 0 && [...all].every(c => c.checked);
+    selectAll.indeterminate = state.selectedSales.size > 0 && !selectAll.checked;
+  }
+}
+
+function toggleSelectAll(cb) {
+  const checkboxes = document.querySelectorAll('.sale-cb');
+  checkboxes.forEach(c => {
+    c.checked = cb.checked;
+    const id = c.dataset.id;
+    if (cb.checked) state.selectedSales.add(id);
+    else state.selectedSales.delete(id);
+    const row = c.closest('tr');
+    if (row) row.classList.toggle('row-selected', cb.checked);
+  });
+  updateBulkBar();
+}
+
+function updateBulkBar() {
+  const bar = document.getElementById('bulk-bar');
+  const countEl = document.getElementById('bulk-count');
+  const n = state.selectedSales.size;
+  if (bar) bar.style.display = n > 0 ? 'flex' : 'none';
+  if (countEl) countEl.textContent = `${n} sale${n !== 1 ? 's' : ''} selected`;
+}
+
+function clearSelection() {
+  state.selectedSales.clear();
+  document.querySelectorAll('.sale-cb').forEach(c => { c.checked = false; c.closest('tr')?.classList.remove('row-selected'); });
+  const sa = document.getElementById('select-all-sales');
+  if (sa) { sa.checked = false; sa.indeterminate = false; }
+  updateBulkBar();
+}
+
+async function bulkComplete() {
+  if (!state.selectedSales.size) return;
+  const ids = [...state.selectedSales].filter(id => {
+    const s = state.sales.find(r => r.id === id);
+    return s && s.status === 'pending';
+  });
+  if (!ids.length) { showToast('Selected sales are already completed','info'); return; }
+  if (!confirm(`Mark ${ids.length} sale(s) as completed?`)) return;
+  for (const id of ids) await updateRecord('sales', id, { status: 'completed' });
+  clearSelection();
+  showToast(`${ids.length} sale(s) marked as completed`, 'success');
+}
+
+async function bulkDelete() {
+  if (!state.selectedSales.size) return;
+  const n = state.selectedSales.size;
+  if (!confirm(`Delete ${n} sale(s)? This cannot be undone.`)) return;
+  for (const id of [...state.selectedSales]) {
+    const rec = state.sales.find(r => r.id === id);
+    // Restore stock for completed linked sales
+    if (rec && rec.status === 'completed' && rec.invId) {
+      const invIdx = state.inventory.findIndex(p => p.id === rec.invId);
+      if (invIdx !== -1) {
+        const restored = (state.inventory[invIdx].stock || 0) + (rec.qty || 0);
+        updateInventoryStock(rec.invId, restored, state.inventory[invIdx]);
+      }
+    }
+    const idx = state.sales.findIndex(r => r.id === id);
+    if (idx !== -1) state.sales.splice(idx, 1);
+    lsSave('sales', state.sales);
+    if (!window._DEMO && window._db) {
+      try { await window._fs.deleteDoc(window._fs.doc(window._db, 'sales', id)); }
+      catch(e) {}
+    }
+  }
+  clearSelection();
+  showToast(`${n} sale(s) deleted`, 'info');
+  renderNotifications();
+  renderSection(getCurrentSection());
+}
+
 function closeModal() {
   document.getElementById('modal-overlay').classList.remove('open');
   document.getElementById('modal-body').innerHTML = '';
