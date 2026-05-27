@@ -2660,21 +2660,32 @@ function init() {
 }
 
 function setupFirestoreListeners() {
-  if (window._listenersActive) return; // prevent duplicate listeners
+  if (window._listenersActive) return;
   if (!window._DEMO && window._db) {
     window._listenersActive = true;
     const {collection,query,orderBy,onSnapshot} = window._fs;
     const cols = [{col:'sales',key:'sales'},{col:'expenses',key:'expenses'},{col:'returns',key:'returns'},{col:'inventory',key:'inventory'}];
-    let loadedCount = 0;
+
+    if (!window._renderTimers) window._renderTimers = {};
+    if (!window._colReady) window._colReady = {};
+
     cols.forEach(({col,key})=>{
       const q = query(collection(window._db,col),orderBy('timestamp','desc'));
-      onSnapshot(q, snap=>{
+      onSnapshot(q, {includeMetadataChanges: false}, snap=>{
+
+        // Skip if all changes are just local pending writes — not yet confirmed by server
+        const hasRealChanges = snap.docChanges().some(c => !c.doc.metadata.hasPendingWrites);
+        const isFirstLoad = !window._colReady[key];
+
+        if (!isFirstLoad && !hasRealChanges) return;
+        window._colReady[key] = true;
+
         const freshData = snap.docs.map(d=>({
           id:d.id,...d.data(),
           timestamp:d.data().timestamp?.toMillis?.()??Date.now(),
           date:d.data().date||new Date().toISOString().split('T')[0]
         }));
-        // For inventory: preserve local restockLog if Firestore doc is missing it (race condition guard)
+
         if (key === 'inventory') {
           freshData.forEach(freshItem => {
             if (!freshItem.restockLog || freshItem.restockLog.length === 0) {
@@ -2685,20 +2696,24 @@ function setupFirestoreListeners() {
             }
           });
         }
+
         state[key] = freshData;
         lsSave(key, state[key]);
         state._lastSync = Date.now(); state._syncError = null;
-        loadedCount++;
-        // Update sync dot green
-        const dot = document.getElementById('sync-dot');
-        if (dot) { dot.style.background='var(--green)'; dot.title='Synced ✓'; }
-        renderNotifications();
-        renderSection(getCurrentSection());
-        const syncEl = document.getElementById('last-sync-time');
-        if (syncEl) syncEl.textContent = 'Last sync: ' + new Date().toLocaleTimeString();
+
+        clearTimeout(window._renderTimers[key]);
+        window._renderTimers[key] = setTimeout(() => {
+          const dot = document.getElementById('sync-dot');
+          if (dot) { dot.style.background='var(--green)'; dot.title='Synced ✓'; }
+          renderNotifications();
+          renderSection(getCurrentSection());
+          const syncEl = document.getElementById('last-sync-time');
+          if (syncEl) syncEl.textContent = 'Last sync: ' + new Date().toLocaleTimeString();
+        }, 300);
+
       }, err => {
         state._syncError = err.code;
-        window._listenersActive = false; // allow retry after error
+        window._listenersActive = false;
         console.warn('Firestore error:', err.code, err.message);
         const dot2 = document.getElementById('sync-dot');
         if (dot2) { dot2.style.background='var(--red)'; dot2.title='Sync error — tap for details'; }
