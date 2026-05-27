@@ -590,6 +590,53 @@ tbody td { padding: 12px 16px; color: var(--text); font-size: 13.5px; }
   .pl-summary { grid-template-columns: 1fr 1fr; }
 }
 
+/* ── TABLET (769px – 1024px) ── */
+@media (min-width: 769px) and (max-width: 1024px) {
+  :root { --sidebar-w: 200px; }
+  .hamburger { display: none !important; }
+  #sidebar {
+    position: relative; left: 0 !important;
+    width: var(--sidebar-w); flex-shrink: 0;
+  }
+  .logo-text { font-size: 15px; }
+  .nav-label { font-size: 12px; }
+  .kpi-grid { grid-template-columns: 1fr 1fr; }
+  .charts-row { grid-template-columns: 1fr 1fr; }
+  #content { padding: 18px; }
+  #search-input { width: 160px; }
+  #date-from, #date-to { display: flex; }
+  .table-card { overflow-x: auto; }
+  table { min-width: 560px; }
+}
+
+/* ── DESKTOP (1025px+) ── */
+@media (min-width: 1025px) {
+  .hamburger { display: none !important; }
+  .kpi-grid { grid-template-columns: repeat(4, 1fr); }
+  .charts-row { grid-template-columns: 1fr 1fr; }
+  #content { padding: 28px 32px; }
+  #search-input { width: 220px; }
+  #date-from, #date-to { display: flex; }
+}
+
+/* ── RECEIPT — TABLET & DESKTOP ── */
+@media (min-width: 769px) {
+  .receipt-card {
+    width: min(480px, 90vw);
+    display: grid;
+    grid-template-rows: auto 1fr auto auto;
+  }
+  .receipt-header { padding: 28px 32px 20px; }
+  .receipt-logo { font-size: 26px; }
+  .receipt-sub { font-size: 12px; }
+  .receipt-body { padding: 22px 32px; }
+  .receipt-row { font-size: 14px; margin-bottom: 9px; }
+  .receipt-total-row { font-size: 20px; padding-top: 14px; }
+  .receipt-footer { font-size: 12px; padding: 12px 32px 20px; }
+  .receipt-actions { padding: 0 32px 24px; gap: 12px; }
+  .receipt-btn { padding: 13px; font-size: 14px; border-radius: 12px; }
+}
+
 /* ── OVERLAY ── */
 #sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 40; backdrop-filter: blur(2px); }
 #sidebar-overlay.show { display: block; }
@@ -844,7 +891,18 @@ tbody td { padding: 12px 16px; color: var(--text); font-size: 13.5px; }
 
   @page {
     size: 80mm auto;
-    margin: 4mm 4mm;
+    margin: 4mm;
+  }
+  body.printing-receipt {
+    width: 80mm !important;
+    zoom: 1 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  body.printing-receipt .receipt-card {
+    zoom: 1 !important;
+    transform: none !important;
+    transform-origin: top left !important;
   }
 }
 </style>
@@ -2244,8 +2302,11 @@ function closeReceipt() {
 }
 function printReceipt() {
   document.body.classList.add('printing-receipt');
+  window.addEventListener('afterprint', function handler() {
+    document.body.classList.remove('printing-receipt');
+    window.removeEventListener('afterprint', handler);
+  });
   window.print();
-  setTimeout(() => document.body.classList.remove('printing-receipt'), 500);
 }
 
 function calcTotal() {
@@ -2278,6 +2339,7 @@ async function saveRecord(collection, record) {
   showToast('Record saved successfully','success');
   renderNotifications();
   renderSection(getCurrentSection());
+  return rec;
 }
 
 function saveSale() {
@@ -2296,11 +2358,7 @@ function saveSale() {
     }
   }
   saveRecord('sales',{product:prod,qty,price,amount:qty*price,status,invId}).then(savedRec => {
-    // Show receipt for completed sales
-    if (status === 'completed') {
-      const rec = state.sales[0]; // most recently added
-      if (rec) showReceipt(rec);
-    }
+    if (status === 'completed' && savedRec) showReceipt(savedRec);
   });
 }
 function saveExpense() {
