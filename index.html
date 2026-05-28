@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en" data-theme="light">
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
@@ -963,15 +963,13 @@ self.addEventListener('fetch', e => {
   const blob = new Blob([swCode], {type:'text/javascript'});
   const swUrl = URL.createObjectURL(blob);
   navigator.serviceWorker.register(swUrl, {scope: '/'})
-    .then(reg => {
-      console.log('SW registered');
-      // Flush sync queue after SW ready
-      reg.addEventListener('updatefound', () => {});
-    })
+    .then(reg => { console.log('SW registered'); })
     .catch(e => console.warn('SW registration failed:', e));
 
-  // Flush queue on page load if online
-  window.addEventListener('load', () => { if (navigator.onLine) setTimeout(sqFlush, 2000); });
+  // Flush queue after app fully initialised (sqFlush defined later in script)
+  window.addEventListener('load', () => {
+    setTimeout(() => { if (typeof sqFlush === 'function' && navigator.onLine) sqFlush(); }, 3000);
+  });
 }
 </script>
 </head>
@@ -1130,7 +1128,7 @@ self.addEventListener('fetch', e => {
         <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
         Sales
       </button>
-      <button class="nav-item" data-section="expenses" onclick="navigate('expenses',this)">
+      <button class="nav-item staff-hidden" data-section="expenses" onclick="navigate('expenses',this)">
         <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
         Expenses
       </button>
@@ -1338,7 +1336,7 @@ self.addEventListener('fetch', e => {
 const state = {
   sales: [], expenses: [], returns: [], inventory: [],
   role: 'admin',
-  theme: 'dark',
+  theme: 'light',
   search: '',
   dateFilter: 'all',
   dateFrom: '',
@@ -1351,6 +1349,7 @@ const state = {
   expPage: 0,
   retPage: 0,
   dismissedNotifs: new Set(),
+  selectedSales: new Set(),
   _lastSync: null,
   _syncError: null,
   _loading: true
@@ -1370,6 +1369,9 @@ function lsLoadAll() {
   state.inventory = lsLoad('inventory') || [];
   const dismissed = lsLoad('dismissedNotifs') || [];
   state.dismissedNotifs = new Set(dismissed);
+  // Apply saved theme — default is light
+  const savedTheme = localStorage.getItem('shades_theme') || 'light';
+  document.documentElement.setAttribute('data-theme', savedTheme);
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -2082,7 +2084,7 @@ function renderNotifications() {
 const sectionNames = {dashboard:'Dashboard',sales:'Sales',expenses:'Expenses',returns:'Returns',reports:'Reports',settings:'Settings',inventory:'Inventory'};
 function navigate(id, btn, fromPopState=false) {
   // Staff role guard — block owner-only sections even via back button or console
-  if (isStaff() && (id === 'reports' || id === 'settings' || id === 'inventory')) {
+  if (isStaff() && (id === 'reports' || id === 'settings' || id === 'inventory' || id === 'expenses')) {
     showToast('Access restricted — owner only','error');
     return;
   }
@@ -2354,8 +2356,6 @@ function openModal(type) {
 // ═══════════════════════════════════════════════════════════
 //  MULTI-SELECT SALES
 // ═══════════════════════════════════════════════════════════
-if (!state.selectedSales) state.selectedSales = new Set();
-
 function onSaleCheck(cb) {
   const id = cb.dataset.id;
   if (cb.checked) state.selectedSales.add(id);
@@ -2433,8 +2433,12 @@ async function bulkDelete() {
     if (idx !== -1) state.sales.splice(idx, 1);
     lsSave('sales', state.sales);
     if (!window._DEMO && window._db) {
-      try { await window._fs.deleteDoc(window._fs.doc(window._db, 'sales', id)); }
-      catch(e) {}
+      if (navigator.onLine) {
+        try { await window._fs.deleteDoc(window._fs.doc(window._db, 'sales', id)); }
+        catch(e) { sqAdd({type:'delete', coll:'sales', id}); }
+      } else {
+        sqAdd({type:'delete', coll:'sales', id});
+      }
     }
   }
   clearSelection();
@@ -2451,14 +2455,13 @@ function closeModal() {
 // ═══════════════════════════════════════════════════════════
 //  RECEIPT
 // ═══════════════════════════════════════════════════════════
-function showReceipt(idOrSale, cartItems) {
+function showReceipt(idOrSale, cartItems, cartStatus) {
   const today = new Date().toISOString().split('T')[0];
 
-  // Multi-item cart receipt
   if (cartItems && cartItems.length > 0) {
     const receiptNo = Date.now().toString().slice(-6).toUpperCase();
     const grandTotal = cartItems.reduce((s,i)=>s+i.amount,0);
-    const status = document.getElementById('f-status')?.value || idOrSale?.status || 'completed';
+    const status = cartStatus || idOrSale?.status || 'completed';
     document.getElementById('receipt-body').innerHTML = `
       <div class="receipt-row"><span class="lbl">Receipt No.</span><span class="val">#${receiptNo}</span></div>
       <div class="receipt-row"><span class="lbl">Date</span><span class="val">${today}</span></div>
@@ -2583,7 +2586,8 @@ async function saveRecord(collection, record) {
       sqAdd({type:'add', coll:collection, data:rec});
     }
   }
-  closeModal();
+  const overlay = document.getElementById('modal-overlay');
+  if (overlay && overlay.classList.contains('open')) closeModal();
   showToast('Record saved','success');
   renderNotifications();
   renderSection(getCurrentSection());
@@ -2656,7 +2660,6 @@ async function saveSale() {
 
   // If cart has items, save each as a separate sale record
   if (cart.length > 0) {
-    // Also check if there's a pending item in the form fields — add it too
     const pendingProd  = document.getElementById('f-product')?.value?.trim();
     const pendingQty   = parseInt(document.getElementById('f-qty')?.value)||0;
     const pendingPrice = parseFloat(document.getElementById('f-price')?.value)||0;
@@ -2664,10 +2667,10 @@ async function saveSale() {
     if (pendingProd && pendingQty > 0 && pendingPrice > 0) {
       cart.push({product:pendingProd,qty:pendingQty,price:pendingPrice,amount:pendingQty*pendingPrice,invId:pendingInvId});
     }
-
+    const cartSnapshot = [...cart]; // snapshot before closing modal
     closeModal();
     let lastRec = null;
-    for (const item of cart) {
+    for (const item of cartSnapshot) {
       if (item.invId && status === 'completed') {
         const invIdx = state.inventory.findIndex(p=>p.id===item.invId);
         if (invIdx !== -1) {
@@ -2677,7 +2680,7 @@ async function saveSale() {
       }
       lastRec = await saveRecord('sales',{product:item.product,qty:item.qty,price:item.price,amount:item.amount,status,invId:item.invId});
     }
-    if (status === 'completed') showReceipt(lastRec, cart);
+    if (status === 'completed') showReceipt(lastRec, cartSnapshot, status);
     window._cart = [];
     return;
   }
@@ -2832,7 +2835,9 @@ function getCurrentSection() {
 function toggleTheme() {
   const html = document.documentElement;
   const dark = html.getAttribute('data-theme')==='dark';
-  html.setAttribute('data-theme', dark?'light':'dark');
+  const newTheme = dark ? 'light' : 'dark';
+  html.setAttribute('data-theme', newTheme);
+  localStorage.setItem('shades_theme', newTheme);
   const icon = document.getElementById('theme-icon');
   icon.innerHTML = dark
     ? '<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>'
