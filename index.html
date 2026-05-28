@@ -1404,6 +1404,19 @@ function lsLoadAll() {
 }
 
 // ═══════════════════════════════════════════════════════════
+//  XSS ESCAPE HELPER — use for ALL user-supplied text in innerHTML
+// ═══════════════════════════════════════════════════════════
+function esc(str) {
+  if (str == null) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+// ═══════════════════════════════════════════════════════════
 //  SESSION & ACCESS CONTROL
 // ═══════════════════════════════════════════════════════════
 // Roles: 'owner' = full access, 'staff' = limited access
@@ -1435,11 +1448,11 @@ async function hashPin(pin) {
 function getOwnerPin() { return lsLoad('pin') || null; }  // stored as hash or null
 function getStaffPin() { return lsLoad('staffPin') || null; } // stored as hash or null
 
-async function checkPin(input, storedHash) {
+async function checkPin(input, storedHash, role) {
+  const defaultPin = (role === 'staff') ? '0000' : '1234';
   if (!storedHash) {
-    // No PIN stored yet — default PINs: owner=1234, staff=0000
-    const defaultHash = await hashPin(storedHash === null ? (storedHash === lsLoad('pin') ? '1234' : '0000') : '1234');
-    return (await hashPin(input)) === defaultHash;
+    // No PIN stored yet — compare against default
+    return (await hashPin(input)) === (await hashPin(defaultPin));
   }
   return (await hashPin(input)) === storedHash;
 }
@@ -1896,13 +1909,13 @@ function renderSales() {
   document.getElementById('sales-tbody').innerHTML = pageItems.length?pageItems.map(s=>`
     <tr data-id="${s.id}" class="${state.selectedSales&&state.selectedSales.has(s.id)?'row-selected':''}">
       <td><input type="checkbox" class="sale-cb" data-id="${s.id}" onchange="onSaleCheck(this)" ${state.selectedSales&&state.selectedSales.has(s.id)?'checked':''} style="accent-color:var(--accent);width:15px;height:15px;cursor:pointer"></td>
-      <td style="font-weight:600">${s.product}</td>
-      <td style="color:var(--muted);font-size:12px">${s.receiptNo ? '#' + s.receiptNo : '—'}</td>
-      <td style="color:var(--muted)">${s.qty}</td>
+      <td style="font-weight:600">${esc(s.product)}</td>
+      <td style="color:var(--muted);font-size:12px">${s.receiptNo ? '#' + esc(s.receiptNo) : '—'}</td>
+      <td style="color:var(--muted)">${parseInt(s.qty)||0}</td>
       <td style="color:var(--muted)">${(s.price||0).toFixed(2)}</td>
       <td style="font-weight:700">K${(s.amount||0).toFixed(2)}</td>
-      <td style="color:var(--muted);font-size:12px">${s.date}</td>
-      <td><span class="badge ${s.status==='completed'?'badge-green':'badge-yellow'}">${s.status}</span></td>
+      <td style="color:var(--muted);font-size:12px">${esc(s.date)}</td>
+      <td><span class="badge ${s.status==='completed'?'badge-green':'badge-yellow'}">${esc(s.status)}</span></td>
       <td><div class="action-btns">
         ${s.status==='pending'?`<button class="action-btn" style="color:var(--green);border-color:rgba(18,217,140,0.3)" onclick="quickCompleteSale('${s.id}')" title="Mark as completed">✓</button>`:''}
         <button class="action-btn" style="color:var(--accent2);border-color:rgba(6,214,192,0.3)" onclick="showReceipt('${s.id}')" title="View Receipt">🧾</button>
@@ -1951,10 +1964,10 @@ function renderExpenses() {
 
   document.getElementById('exp-tbody').innerHTML = filtered.length?filtered.slice(state.expPage*PAGE_SIZE,(state.expPage+1)*PAGE_SIZE).map(e=>`
     <tr>
-      <td><span class="badge badge-blue">${e.category}</span></td>
-      <td style="color:var(--muted)">${e.description}</td>
+      <td><span class="badge badge-blue">${esc(e.category)}</span></td>
+      <td style="color:var(--muted)">${esc(e.description)}</td>
       <td style="font-weight:700;color:var(--red)">K${(e.amount||0).toFixed(2)}</td>
-      <td style="color:var(--muted);font-size:12px">${e.date}</td>
+      <td style="color:var(--muted);font-size:12px">${esc(e.date)}</td>
       <td><div class="action-btns">
         <button class="action-btn edit" onclick="editRecord('expenses','${e.id}')">✏️</button>
         <button class="action-btn del"  onclick="deleteRecord('expenses','${e.id}')">🗑️</button>
@@ -1981,12 +1994,12 @@ function renderReturns() {
   `;
   document.getElementById('ret-tbody').innerHTML = filtered.length?filtered.slice(state.retPage*PAGE_SIZE,(state.retPage+1)*PAGE_SIZE).map(r=>`
     <tr>
-      <td style="font-weight:600">${r.product}</td>
-      <td style="color:var(--muted)">${r.qty}</td>
+      <td style="font-weight:600">${esc(r.product)}</td>
+      <td style="color:var(--muted)">${parseInt(r.qty)||0}</td>
       <td style="font-weight:700;color:var(--red)">K${(r.refund||0).toFixed(2)}</td>
-      <td><span class="badge badge-purple">${r.reason}</span></td>
+      <td><span class="badge badge-purple">${esc(r.reason)}</span></td>
       <td>${r.restocked===true?'<span class="badge badge-green">Restocked</span>':r.restocked===false?'<span class="badge badge-red">Not restocked</span>':'<span style="color:var(--muted);font-size:12px">—</span>'}</td>
-      <td style="color:var(--muted);font-size:12px">${r.date}</td>
+      <td style="color:var(--muted);font-size:12px">${esc(r.date)}</td>
       <td><div class="action-btns">
         <button class="action-btn edit" onclick="editRecord('returns','${r.id}')">✏️</button>
         <button class="action-btn del"  onclick="deleteRecord('returns','${r.id}')">🗑️</button>
@@ -2077,8 +2090,8 @@ function buildNotifItems() {
   if (totalExp > totalRev*0.8 && totalRev>0) notes.push({key:'high-exp',msg:'🔴 High expense ratio relative to revenue!'});
   if (todaySales>0) notes.push({key:'today-'+today,msg:`📊 Today's sales: K${fmt(todaySales)}`});
   if (pending>0) notes.push({key:'pending-'+pending,msg:`🕐 ${pending} pending order(s) need completion`});
-  if (outStock.length>0) notes.push({key:'outstock-'+outStock.map(p=>p.id).join(','),msg:`❌ ${outStock.length} product(s) out of stock — ${outStock.map(p=>p.name).slice(0,2).join(', ')}${outStock.length>2?'…':''}`});
-  if (lowStock.length>0) notes.push({key:'lowstock-'+lowStock.map(p=>p.id).join(','),msg:`⚠️ Low stock: ${lowStock.map(p=>`${p.name} (${p.stock} left)`).slice(0,3).join(', ')}${lowStock.length>3?'…':''}`});
+  if (outStock.length>0) notes.push({key:'outstock-'+outStock.map(p=>p.id).join(','),msg:`❌ ${outStock.length} product(s) out of stock — ${outStock.map(p=>esc(p.name)).slice(0,2).join(', ')}${outStock.length>2?'…':''}`});
+  if (lowStock.length>0) notes.push({key:'lowstock-'+lowStock.map(p=>p.id).join(','),msg:`⚠️ Low stock: ${lowStock.map(p=>`${esc(p.name)} (${p.stock} left)`).slice(0,3).join(', ')}${lowStock.length>3?'…':''}`});
   return notes;
 }
 function renderNotifications() {
@@ -2837,7 +2850,7 @@ async function saveReturn() {
   const reason  = document.getElementById('f-reason')?.value;
   const invId   = document.getElementById('f-rinv-id')?.value || '';
   const restock = document.getElementById('f-restock')?.value || 'yes';
-  if (!prod||refund<=0) { showToast('Please fill all fields correctly','error'); return; }
+  if (!prod || qty <= 0 || refund <= 0) { showToast('Please fill all fields correctly','error'); return; }
 
   // Restore stock if linked to inventory and restock is yes
   if (invId && restock === 'yes') {
@@ -2989,12 +3002,18 @@ async function doExportExcel(type) {
   showToast('Preparing Excel file...', 'info');
   // Load SheetJS dynamically
   if (!window.XLSX) {
-    await new Promise((resolve, reject) => {
-      const s = document.createElement('script');
-      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
-      s.onload = resolve; s.onerror = reject;
-      document.head.appendChild(s);
-    });
+    try {
+      await new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+        s.onload = resolve;
+        s.onerror = () => reject(new Error('SheetJS failed to load'));
+        document.head.appendChild(s);
+      });
+    } catch(e) {
+      showToast('Excel export requires internet — try CSV instead','error');
+      return;
+    }
   }
   const XLSX = window.XLSX;
   const wb   = XLSX.utils.book_new();
@@ -3320,7 +3339,7 @@ function editRecord(coll, id) {
     titleEl.textContent = '✏️ Edit Sale';
     bodyEl.innerHTML = `
       <div class="form-group"><label class="form-label">Product Name</label>
-        <input class="form-input" id="f-product" value="${rec.product}" oninput="calcTotal()"/>
+        <input class="form-input" id="f-product" value="${esc(rec.product)}" oninput="calcTotal()"/>
       </div>
       <div class="form-row">
         <div class="form-group"><label class="form-label">Quantity</label>
@@ -3347,7 +3366,7 @@ function editRecord(coll, id) {
         <select class="form-input" id="f-cat">${cats.map(c=>`<option ${c===rec.category?'selected':''}>${c}</option>`).join('')}</select>
       </div>
       <div class="form-group"><label class="form-label">Description</label>
-        <input class="form-input" id="f-desc" value="${rec.description}"/>
+        <input class="form-input" id="f-desc" value="${esc(rec.description)}"/>
       </div>
       <div class="form-group"><label class="form-label">Amount (K)</label>
         <input class="form-input" id="f-amount" type="number" step="0.01" value="${rec.amount}"/>
@@ -3359,7 +3378,7 @@ function editRecord(coll, id) {
     titleEl.textContent = '✏️ Edit Return';
     bodyEl.innerHTML = `
       <div class="form-group"><label class="form-label">Product</label>
-        <input class="form-input" id="f-rproduct" value="${rec.product}"/>
+        <input class="form-input" id="f-rproduct" value="${esc(rec.product)}"/>
       </div>
       <div class="form-row">
         <div class="form-group"><label class="form-label">Qty</label>
@@ -3470,6 +3489,9 @@ async function saveProduct() {
   const low    = parseInt(document.getElementById('f-plow')?.value)||5;
   const desc   = document.getElementById('f-pdesc')?.value?.trim();
   if (!name) { showToast('Product name is required','error'); return; }
+  if (sell > 0 && cost > 0 && sell < cost) {
+    if (!confirm(`Selling price (K${sell.toFixed(2)}) is lower than cost price (K${cost.toFixed(2)}). This will result in a loss. Continue?`)) return;
+  }
   const today  = new Date().toISOString().split('T')[0];
   const id     = 'inv-' + Date.now();
   const rec    = { id, name, category:cat, sku, costPrice:cost, sellPrice:sell, stock, lowThreshold:low, description:desc, date:today, timestamp:Date.now(), restockLog:[] };
@@ -3573,14 +3595,14 @@ function openEditProductModal(id) {
     document.getElementById('modal-title').textContent = '✏️ Edit Product';
     document.getElementById('modal-body').innerHTML = `
       <div class="form-group"><label class="form-label">Product Name</label>
-        <input class="form-input" id="f-pname" value="${p.name}"/>
+        <input class="form-input" id="f-pname" value="${esc(p.name)}"/>
       </div>
       <div class="form-row">
         <div class="form-group"><label class="form-label">Category</label>
-          <select class="form-input" id="f-pcat">${cats.map(c=>`<option ${c===p.category?'selected':''}>${c}</option>`).join('')}</select>
+          <select class="form-input" id="f-pcat">${cats.map(c=>`<option ${c===p.category?'selected':''}>${esc(c)}</option>`).join('')}</select>
         </div>
         <div class="form-group"><label class="form-label">SKU / Code</label>
-          <input class="form-input" id="f-psku" value="${p.sku||''}"/>
+          <input class="form-input" id="f-psku" value="${esc(p.sku||'')}"/>
         </div>
       </div>
       <div class="form-row">
@@ -3600,7 +3622,7 @@ function openEditProductModal(id) {
         </div>
       </div>
       <div class="form-group"><label class="form-label">Description</label>
-        <input class="form-input" id="f-pdesc" value="${p.description||''}"/>
+        <input class="form-input" id="f-pdesc" value="${esc(p.description||'')}"/>
       </div>
       <button class="btn btn-primary" style="width:100%;justify-content:center;padding:12px" onclick="saveEditProduct('${id}')">Update Product</button>
     `;
@@ -3618,6 +3640,9 @@ async function saveEditProduct(id) {
   const low   = parseInt(document.getElementById('f-plow')?.value)||5;
   const desc  = document.getElementById('f-pdesc')?.value?.trim();
   if (!name) { showToast('Product name required','error'); return; }
+  if (sell > 0 && cost > 0 && sell < cost) {
+    if (!confirm(`Selling price (K${sell.toFixed(2)}) is lower than cost price (K${cost.toFixed(2)}). This will result in a loss. Continue?`)) return;
+  }
   const updates = { name, category:cat, sku, costPrice:cost, sellPrice:sell, stock, lowThreshold:low, description:desc };
   const idx = state.inventory.findIndex(p=>p.id===id);
   if (idx !== -1) { state.inventory[idx] = {...state.inventory[idx], ...updates}; lsSave('inventory', state.inventory); }
@@ -3699,7 +3724,7 @@ function renderInventory() {
       <div class="inv-empty" style="grid-column:1/-1">
         <div class="inv-empty-icon">📦</div>
         <div style="font-family:var(--font-head);font-size:17px;font-weight:700;margin-bottom:6px">
-          ${state.search ? 'No products match "' + state.search + '"' : state.invFilter !== 'all' ? 'No products match this filter' : 'No products yet'}
+          ${state.search ? 'No products match "' + esc(state.search) + '"' : state.invFilter !== 'all' ? 'No products match this filter' : 'No products yet'}
         </div>
         <div style="font-size:13px;color:var(--muted)">
           ${state.search ? 'Try a different search term' : state.invFilter !== 'all' ? 'Try a different filter' : 'Click "Add Product" to start building your catalog'}
@@ -3723,8 +3748,8 @@ function renderInventory() {
         ${badge}
         <div class="inv-card-top">
           <div>
-            <div class="inv-card-name">${p.name}</div>
-            <div class="inv-card-cat">${p.category}${p.sku?' · '+p.sku:''}</div>
+            <div class="inv-card-name">${esc(p.name)}</div>
+            <div class="inv-card-cat">${esc(p.category)}${p.sku?' · '+esc(p.sku):''}</div>
           </div>
         </div>
         <div class="inv-stock-big" style="color:${barColor}">${p.stock}</div>
@@ -3751,7 +3776,7 @@ function renderInventory() {
           <button class="action-btn edit" onclick="openEditProductModal('${p.id}')">✏️</button>
           <button class="action-btn del"  onclick="deleteProduct('${p.id}')">🗑️</button>
         </div>
-        ${p.description ? `<div style="font-size:11px;color:var(--muted);margin-top:8px;font-style:italic">${p.description}</div>` : ''}
+        ${p.description ? `<div style="font-size:11px;color:var(--muted);margin-top:8px;font-style:italic">${esc(p.description)}</div>` : ''}
       </div>
     `;
   }).join('');
