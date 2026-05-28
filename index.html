@@ -2,29 +2,36 @@
 <html lang="en" data-theme="light">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
 <title>Shade's Apparel</title>
 <link rel="manifest" id="pwa-manifest"/>
-<meta name="theme-color" content="#060810"/>
+<meta name="theme-color" content="#4f8ef7"/>
+<meta name="mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
-<meta name="apple-mobile-web-app-title" content="Shade's Apparel"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+<meta name="apple-mobile-web-app-title" content="Shade's"/>
+<meta name="application-name" content="Shade's Apparel"/>
+<meta name="description" content="Retail finance and inventory management"/>
 <link rel="apple-touch-icon" id="apple-touch-icon"/>
 <script>
 (function(){
   var b64='data:image/jpeg;base64,/9j/4QD3RXhpZgAATU0AKgAAAAgABwEAAAQAAAABAAAA1AEQAAIAAAAIAAAAYgEBAAQAAAABAAAA+QESAAMAAAABAAEAAAEyAAIAAAAUAAAAaodpAAQAAAABAAAAhQEPAAIAAAAHAAAAfgAAAABTVEstTDIxADIwMjY6MDU6MjEgMTA6MjE6MjkASFVBV0VJAAAFkggABAAAAAEAAAAAkAQAAgAAABQAAADHkAMAAgAAABQAAADboAMABAAAAAEAAAD5oAIABAAAAAEAAADUAAAAADIwMjY6MDU6MjEgMTA6MjE6MTUAMjAyNjowNToyMSAxMDoyMToxNQD/4AAQSkZJRgABAQAAAQABAAD/4gIoSUNDX1BST0ZJTEUAAQEAAAIYAAAAAAIQAABtbnRyUkdCIFhZWiAAAAAAAAAAAAAAAABhY3NwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAA9tYAAQAAAADTLQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlkZXNjAAAA8AAAAHRyWFlaAAABZAAAABRnWFlaAAABeAAAABRiWFlaAAABjAAAABRyVFJDAAABoAAAAChnVFJDAAABoAAAAChiVFJDAAABoAAAACh3dHB0AAAByAAAABRjcHJ0AAAB3AAAADxtbHVjAAAAAAAAAAEAAAAMZW5VUwAAAFgAAAAcAHMAUgBHAEIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFhZWiAAAAAAAABvogAAOPUAAAOQWFlaIAAAAAAAAGKZAAC3hQAAGNpYWVogAAAAAAAAJKAAAA+EAAC2z3BhcmEAAAAAAAQAAAACZmYAAPKnAAANWQAAE9AAAApbAAAAAAAAAABYWVogAAAAAAAA9tYAAQAAAADTLW1sdWMAAAAAAAAAAQAAAAxlblVTAAAAIAAAABwARwBvAG8AZwBsAGUAIABJAG4AYwAuACAAMgAwADEANv/bAEMAAQEBAQEBAQEBAQEBAQICAwICAgICBAMDAgMFBAUFBQQEBAUGBwYFBQcGBAQGCQYHCAgICAgFBgkKCQgKBwgICP/bAEMBAQEBAgICBAICBAgFBAUICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICP/AABEIAPkA1AMBIgACEQEDEQH/xAAeAAEAAgAHAQAAAAAAAAAAAAAAAwYBAgUHCAkKBP/EADwQAAEDAwIEAwYDBgYDAQAAAAEAAgMEBREGBwgSITFBUWEJEzNxcrEiMoEUI0JSkcEVFjRiofAk0eHx/8QAHgEBAAEDBQEAAAAAAAAAAAAAAAkBAggDBAUGBwr/xAA8EQABAwMCBAQDBgQEBwAAAAABAAIDBAURBgcIITFBElFhcSKBkRMyQqHR4QkjJHIUFZKxFkNSgqKywf/aAAwDAQACEQMRAD8A8OcPwovpH2Uijh+FF9I+ykXLt6Lh0REVUREREREREREREREREREREREREREREREREREREREREREREREREUcPwovpH2Uijh+FF9I+ykVG9ERERVRERERERERERERERERERERERERERERERERERERERERERERERERRw/Ci+kfZSKOH4UX0j7KRUb0RERFVERERERERERERERFlLgBkkY+aIsyL55KqnhwZZomA+JcF8/8Ai1szj9upQfLnCoXBV8JWoLA9vFfNHV0s5Pu6iKTH8rgVPzZ6gjCeIK77M9cLOiZHmiqrERERERERERERERERERERFHD8KL6R9lIo4fhRfSPspFRvREREVUREREWB+eFisCMqKeVkEb5ZZGxRtGSSqE46opASfDC0yvvVBb8iaYOl8GN6kqp3TVEkvNBbj7uIHBk8XfLyVQfl5JcSXd8lbaSpxyC3UdNnmVbKvVlXIS2kiZTtxjmPUquVVxr6k5nqZn5Pbm6f0WNBb6y5Tx0lDBLUzuPK1rG5JK7MeHT2bO5G5sdv1Hrdkuj9Ly4e10rf3sze/wCFp8D5rpmqtb2+zwGpuUwY31PM+wXp23e0971PVCks1OZHHvjkPcrrTtlnud2qGU9BST1UzzgNa0klcxtreBHfLchsVWdN1NjtjgHCetBia4Hyz3Xf/tPwgbM7OUtO6y6bpLheI2jNbVND5CfTwW/UsMMLfdRRxxRDGGtGAP0WHWsuL9pcYbLFkf8AU7/4FKzs1/DBY9rKrVVRz6+Bn+xK6etA+zC01aRDU611LPcZcAvhp2coafLJ7rk1a+DrYaw0Bt8m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';
   document.getElementById('apple-touch-icon').href=b64;
   var manifest={
-    name:"Shade's Apparel",
+    name:"Shade's Apparel — Finance Manager",
     short_name:"Shade's",
-    start_url:".",
+    description:"Retail finance and inventory management for Shade's Apparel",
+    start_url:"./",
+    scope:"./",
     display:"standalone",
-    background_color:"#060810",
-    theme_color:"#060810",
-    orientation:"portrait",
+    display_override:["standalone","minimal-ui"],
+    background_color:"#ffffff",
+    theme_color:"#4f8ef7",
+    orientation:"portrait-primary",
+    categories:["business","finance","productivity"],
     icons:[
-      {src:b64,sizes:"192x192",type:"image/jpeg"},
-      {src:b64,sizes:"512x512",type:"image/jpeg"}
+      {src:b64,sizes:"192x192",type:"image/jpeg",purpose:"any"},
+      {src:b64,sizes:"512x512",type:"image/jpeg",purpose:"any maskable"}
     ]
   };
   var blob=new Blob([JSON.stringify(manifest)],{type:'application/manifest+json'});
@@ -49,6 +56,8 @@ import { initializeApp }    from "https://www.gstatic.com/firebasejs/10.7.1/fire
 import { getFirestore, collection, addDoc, getDocs, query, orderBy,
          onSnapshot, serverTimestamp, deleteDoc, updateDoc, doc, setDoc }
   from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getAuth, signInAnonymously, onAuthStateChanged }
+  from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyB0KU_TGxM7kiF3kBwNtS_CpXTzroyjQeQ",
@@ -61,12 +70,31 @@ const firebaseConfig = {
 };
 
 try {
-  const app = initializeApp(firebaseConfig);
-  const db  = getFirestore(app);
+  const app  = initializeApp(firebaseConfig);
+  const db   = getFirestore(app);
+  const auth = getAuth(app);
   window._db   = db;
+  window._auth = auth;
   window._DEMO = false;
   window._fs   = { collection, addDoc, getDocs, query, orderBy, onSnapshot,
                    serverTimestamp, deleteDoc, updateDoc, doc, setDoc };
+
+  // Sign in anonymously — gives every app user a Firebase identity
+  // Firestore rules will require this auth before allowing any read/write
+  signInAnonymously(auth).catch(e => {
+    console.warn('Anonymous auth failed:', e.code);
+    // App still works offline — sync will retry when auth succeeds
+  });
+
+  onAuthStateChanged(auth, user => {
+    if (user) {
+      window._authReady = true;
+      window._uid = user.uid;
+      // If listeners were waiting for auth, start them now
+      if (window._authReadyCb) { window._authReadyCb(); window._authReadyCb = null; }
+    }
+  });
+
 } catch(e) {
   window._DEMO = true;
 }
@@ -1186,6 +1214,9 @@ self.addEventListener('fetch', e => {
         <input type="date" id="date-to" class="date-filter" style="width:130px;cursor:pointer" title="To date" onchange="onDateRange()" placeholder="To"/>
         <div id="sync-dot" title="Sync status" style="width:8px;height:8px;border-radius:50%;background:var(--muted);margin-right:2px;transition:background 0.4s;cursor:pointer;padding:8px;box-sizing:content-box;margin:-8px 2px -8px -8px" onclick="navigate('settings',null)"></div>
         <div id="offline-badge" title="Unsynced changes" style="display:none;font-size:10px;font-weight:800;background:var(--yellow);color:#000;border-radius:20px;padding:2px 7px;cursor:pointer" onclick="navigate('settings',null)">⏳ Unsynced</div>
+        <button id="install-btn" onclick="triggerInstall()" title="Install app" style="display:none;align-items:center;gap:5px;font-size:11px;font-weight:700;background:linear-gradient(135deg,var(--accent),var(--purple));color:#fff;border:none;border-radius:20px;padding:5px 11px;cursor:pointer">
+          ⬇️ Install
+        </button>
         <button class="icon-btn" onclick="toggleTheme()" title="Toggle theme">
           <svg id="theme-icon" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
         </button>
@@ -1224,7 +1255,7 @@ self.addEventListener('fetch', e => {
             <button class="btn" style="padding:7px 14px;font-size:12px;background:rgba(245,54,92,0.12);color:var(--red);border:1px solid rgba(245,54,92,0.3)" onclick="bulkDelete()">&#128465; Delete</button>
             <button class="btn" style="padding:7px 14px;font-size:12px;background:var(--card2);color:var(--muted);border:1px solid var(--border);margin-left:auto" onclick="clearSelection()">&#10005; Deselect All</button>
           </div>
-          <div style="overflow-x:auto"><table><thead><tr><th style="width:36px"><input type="checkbox" id="select-all-sales" onchange="toggleSelectAll(this)" style="accent-color:var(--accent);width:15px;height:15px;cursor:pointer"></th><th>Product</th><th>Qty</th><th>Price (K)</th><th>Amount (K)</th><th>Date</th><th>Status</th><th></th></tr></thead><tbody id="sales-tbody"></tbody></table></div>
+          <div style="overflow-x:auto"><table><thead><tr><th style="width:36px"><input type="checkbox" id="select-all-sales" onchange="toggleSelectAll(this)" style="accent-color:var(--accent);width:15px;height:15px;cursor:pointer"></th><th>Product</th><th>Receipt #</th><th>Qty</th><th>Price (K)</th><th>Amount (K)</th><th>Date</th><th>Status</th><th></th></tr></thead><tbody id="sales-tbody"></tbody></table></div>
         </div>
       </div>
 
@@ -1297,8 +1328,12 @@ self.addEventListener('fetch', e => {
           <div style="color:var(--muted);font-size:14px">Financial summary & performance analytics</div>
           <div style="display:flex;gap:8px">
             <button class="btn btn-success" onclick="exportCSV()">
-            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            Export CSV
+              <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              CSV
+            </button>
+            <button class="btn btn-success" onclick="exportExcel()" style="background:linear-gradient(135deg,#1d6f42,#2e7d32)">
+              <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Excel
             </button>
             <button class="btn no-print" style="background:var(--card2);border:1px solid var(--border);color:var(--text)" onclick="printReport()">
               <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
@@ -1862,6 +1897,7 @@ function renderSales() {
     <tr data-id="${s.id}" class="${state.selectedSales&&state.selectedSales.has(s.id)?'row-selected':''}">
       <td><input type="checkbox" class="sale-cb" data-id="${s.id}" onchange="onSaleCheck(this)" ${state.selectedSales&&state.selectedSales.has(s.id)?'checked':''} style="accent-color:var(--accent);width:15px;height:15px;cursor:pointer"></td>
       <td style="font-weight:600">${s.product}</td>
+      <td style="color:var(--muted);font-size:12px">${s.receiptNo ? '#' + s.receiptNo : '—'}</td>
       <td style="color:var(--muted)">${s.qty}</td>
       <td style="color:var(--muted)">${(s.price||0).toFixed(2)}</td>
       <td style="font-weight:700">K${(s.amount||0).toFixed(2)}</td>
@@ -1874,7 +1910,7 @@ function renderSales() {
         <button class="action-btn del"  onclick="deleteRecord('sales','${s.id}')">🗑️</button>
       </div></td>
     </tr>
-  `).join(''):`<tr class="empty-row"><td colspan="8">No sales records found</td></tr>`;
+  `).join(''):`<tr class="empty-row"><td colspan="9">No sales records found</td></tr>`;
 
   // Pagination controls
   let paginationHtml = '';
@@ -2169,32 +2205,41 @@ function _pinShakeError(msg) {
   setTimeout(()=>{ _pinBuffer=''; updatePinDots(false); }, 600);
 }
 async function verifyPin() {
-  const storedHash = lsLoad('pin');
-  const defaultPin = '1234';
-  let inputMatch = false;
-  if (!storedHash) {
-    inputMatch = _pinBuffer === defaultPin;
-    if (inputMatch) hashPin(_pinBuffer).then(h=>lsSave('pin',h)); // migrate
-  } else {
-    inputMatch = (await hashPin(_pinBuffer)) === storedHash;
+  const storedOwnerHash = lsLoad('pin');
+  const storedStaffHash = lsLoad('staffPin');
+  const defaultOwner = '1234';
+  const defaultStaff = '0000';
+
+  // Helper: check owner PIN
+  async function ownerOk(input) {
+    if (!storedOwnerHash) return input === defaultOwner;
+    return (await hashPin(input)) === storedOwnerHash;
+  }
+  // Helper: check staff PIN
+  async function staffOk(input) {
+    if (!storedStaffHash) return input === defaultStaff;
+    return (await hashPin(input)) === storedStaffHash;
   }
 
+  // ── MODE 0: Reports unlock ──
   if (_pinMode === 0) {
-    if (inputMatch) {
+    if (await ownerOk(_pinBuffer)) {
       state.reportsUnlocked = true;
       document.getElementById('pin-overlay').classList.remove('open');
       if (_pinCallback) { const cb=_pinCallback; _pinCallback=null; cb(); }
     } else { _pinShakeError('Incorrect PIN. Try again.'); }
+
+  // ── MODES 1-3: Change Owner PIN ──
   } else if (_pinMode === 1) {
-    if (inputMatch) {
+    if (await ownerOk(_pinBuffer)) {
       _pinMode = 2; _pinBuffer = '';
-      document.getElementById('pin-desc').textContent = 'Enter your new 4-digit PIN';
+      document.getElementById('pin-desc').textContent = 'Enter your new 4-digit Owner PIN';
       document.getElementById('pin-error').textContent = '';
       updatePinDots();
     } else { _pinShakeError('Incorrect PIN. Try again.'); }
   } else if (_pinMode === 2) {
     _newPinTemp = _pinBuffer; _pinMode = 3; _pinBuffer = '';
-    document.getElementById('pin-desc').textContent = 'Confirm your new PIN';
+    document.getElementById('pin-desc').textContent = 'Confirm your new Owner PIN';
     document.getElementById('pin-error').textContent = '';
     updatePinDots();
   } else if (_pinMode === 3) {
@@ -2203,13 +2248,44 @@ async function verifyPin() {
       lsSave('pin', hash);
       document.getElementById('pin-overlay').classList.remove('open');
       _pinMode = 0; _newPinTemp = ''; _pinBuffer = '';
-      showToast('PIN changed successfully ✓','success');
+      showToast('Owner PIN changed ✓','success');
       renderSettings();
     } else {
       _pinMode = 2; _newPinTemp = '';
       _pinShakeError("PINs don't match — enter new PIN again");
       setTimeout(()=>{
-        document.getElementById('pin-desc').textContent = 'Enter your new 4-digit PIN';
+        document.getElementById('pin-desc').textContent = 'Enter your new 4-digit Owner PIN';
+        document.getElementById('pin-error').textContent = '';
+      }, 700);
+    }
+
+  // ── MODES 10-12: Change Staff PIN ──
+  } else if (_pinMode === 10) {
+    if (await ownerOk(_pinBuffer)) {
+      _pinMode = 11; _pinBuffer = '';
+      document.getElementById('pin-title').textContent = 'Change Staff PIN';
+      document.getElementById('pin-desc').textContent = 'Enter the new 4-digit Staff PIN';
+      document.getElementById('pin-error').textContent = '';
+      updatePinDots();
+    } else { _pinShakeError('Incorrect Owner PIN. Try again.'); }
+  } else if (_pinMode === 11) {
+    _newPinTemp = _pinBuffer; _pinMode = 12; _pinBuffer = '';
+    document.getElementById('pin-desc').textContent = 'Confirm the new Staff PIN';
+    document.getElementById('pin-error').textContent = '';
+    updatePinDots();
+  } else if (_pinMode === 12) {
+    if (_pinBuffer === _newPinTemp) {
+      const hash = await hashPin(_newPinTemp);
+      lsSave('staffPin', hash);
+      document.getElementById('pin-overlay').classList.remove('open');
+      _pinMode = 0; _newPinTemp = ''; _pinBuffer = '';
+      showToast('Staff PIN changed ✓','success');
+      renderSettings();
+    } else {
+      _pinMode = 11; _newPinTemp = '';
+      _pinShakeError("PINs don't match — enter new Staff PIN again");
+      setTimeout(()=>{
+        document.getElementById('pin-desc').textContent = 'Enter the new 4-digit Staff PIN';
         document.getElementById('pin-error').textContent = '';
       }, 700);
     }
@@ -2464,13 +2540,20 @@ function closeModal() {
 // ═══════════════════════════════════════════════════════════
 //  RECEIPT
 // ═══════════════════════════════════════════════════════════
+function getNextReceiptNo() {
+  const last = parseInt(localStorage.getItem('shades_last_receipt') || '0');
+  const next = last + 1;
+  localStorage.setItem('shades_last_receipt', next.toString());
+  return String(next).padStart(5, '0');
+}
+
 function showReceipt(idOrSale, cartItems, cartStatus) {
   const today = new Date().toISOString().split('T')[0];
 
   if (cartItems && cartItems.length > 0) {
-    const receiptNo = Date.now().toString().slice(-6).toUpperCase();
+    const receiptNo  = getNextReceiptNo();
     const grandTotal = cartItems.reduce((s,i)=>s+i.amount,0);
-    const status = cartStatus || idOrSale?.status || 'completed';
+    const status     = cartStatus || idOrSale?.status || 'completed';
     document.getElementById('receipt-body').innerHTML = `
       <div class="receipt-row"><span class="lbl">Receipt No.</span><span class="val">#${receiptNo}</span></div>
       <div class="receipt-row"><span class="lbl">Date</span><span class="val">${today}</span></div>
@@ -2491,8 +2574,8 @@ function showReceipt(idOrSale, cartItems, cartStatus) {
     ? state.sales.find(s => s.id === idOrSale)
     : idOrSale;
   if (!sale) return;
-
-  const receiptNo = sale.id.toString().slice(-6).toUpperCase();
+  // Use stored receipt number or generate new one
+  const receiptNo = sale.receiptNo || getNextReceiptNo();
   document.getElementById('receipt-body').innerHTML = `
     <div class="receipt-row"><span class="lbl">Receipt No.</span><span class="val">#${receiptNo}</span></div>
     <div class="receipt-row"><span class="lbl">Date</span><span class="val">${sale.date}</span></div>
@@ -2689,7 +2772,10 @@ async function saveSale() {
       }
       lastRec = await saveRecord('sales',{product:item.product,qty:item.qty,price:item.price,amount:item.amount,status,invId:item.invId});
     }
-    if (status === 'completed') showReceipt(lastRec, cartSnapshot, status);
+    const rNo = getNextReceiptNo();
+    if (status === 'completed') showReceipt({...lastRec, receiptNo: rNo}, cartSnapshot, status);
+    // Store receipt number on the last sale record
+    if (lastRec) updateRecord('sales', lastRec.id, {receiptNo: rNo});
     window._cart = [];
     return;
   }
@@ -2708,7 +2794,12 @@ async function saveSale() {
     }
   }
   saveRecord('sales',{product:prod,qty,price,amount:qty*price,status,invId}).then(savedRec => {
-    if (status === 'completed' && savedRec) showReceipt(savedRec);
+    if (status === 'completed' && savedRec) {
+      const rNo = getNextReceiptNo();
+      savedRec.receiptNo = rNo;
+      updateRecord('sales', savedRec.id, {receiptNo: rNo});
+      showReceipt({...savedRec, receiptNo: rNo});
+    }
   });
 }
 function saveExpense() {
@@ -2862,6 +2953,108 @@ function doExportCSV(type) {
 
 
 // ═══════════════════════════════════════════════════════════
+//  EXCEL EXPORT
+// ═══════════════════════════════════════════════════════════
+function exportExcel() {
+  const overlay = document.getElementById('modal-overlay');
+  document.getElementById('modal-title').textContent = '📗 Export to Excel';
+  document.getElementById('modal-body').innerHTML = `
+    <p style="color:var(--muted);font-size:13px;margin-bottom:18px">Downloads a .xlsx file with separate sheets for each data type:</p>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div style="background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:14px;font-size:13px">
+        <div style="font-weight:700;margin-bottom:6px">📗 Full Workbook (recommended)</div>
+        <div style="color:var(--muted);font-size:12px;margin-bottom:10px">4 sheets: Sales · Expenses · Returns · Inventory</div>
+        <button class="btn btn-success" style="width:100%;justify-content:center" onclick="doExportExcel('full')">Download Full Workbook</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <button class="btn" style="background:var(--card2);border:1px solid var(--border);color:var(--text);flex-direction:column;gap:2px;padding:10px" onclick="doExportExcel('sales')">
+          <span>🧾 Sales</span><span style="font-size:11px;color:var(--muted)">${state.sales.length} records</span>
+        </button>
+        <button class="btn" style="background:var(--card2);border:1px solid var(--border);color:var(--text);flex-direction:column;gap:2px;padding:10px" onclick="doExportExcel('expenses')">
+          <span>💸 Expenses</span><span style="font-size:11px;color:var(--muted)">${state.expenses.length} records</span>
+        </button>
+        <button class="btn" style="background:var(--card2);border:1px solid var(--border);color:var(--text);flex-direction:column;gap:2px;padding:10px" onclick="doExportExcel('returns')">
+          <span>↩️ Returns</span><span style="font-size:11px;color:var(--muted)">${state.returns.length} records</span>
+        </button>
+        <button class="btn" style="background:var(--card2);border:1px solid var(--border);color:var(--text);flex-direction:column;gap:2px;padding:10px" onclick="doExportExcel('inventory')">
+          <span>📦 Inventory</span><span style="font-size:11px;color:var(--muted)">${state.inventory.length} products</span>
+        </button>
+      </div>
+    </div>
+  `;
+  overlay.classList.add('open');
+}
+
+async function doExportExcel(type) {
+  showToast('Preparing Excel file...', 'info');
+  // Load SheetJS dynamically
+  if (!window.XLSX) {
+    await new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+      s.onload = resolve; s.onerror = reject;
+      document.head.appendChild(s);
+    });
+  }
+  const XLSX = window.XLSX;
+  const wb   = XLSX.utils.book_new();
+  const d    = new Date().toISOString().split('T')[0];
+
+  const salesHeaders    = ['Receipt #','Date','Product','Qty','Unit Price (K)','Amount (K)','Status'];
+  const expHeaders      = ['Date','Category','Description','Amount (K)'];
+  const retHeaders      = ['Date','Product','Qty','Refund (K)','Reason','Restocked'];
+  const invHeaders      = ['Product','Category','Stock','Cost Price (K)','Sell Price (K)','Value (K)'];
+
+  const salesRows    = state.sales.map(s=>[s.receiptNo||'—',s.date,s.product,s.qty,(s.price||0),(s.amount||0),s.status]);
+  const expRows      = state.expenses.map(e=>[e.date,e.category,e.description,(e.amount||0)]);
+  const retRows      = state.returns.map(r=>[r.date,r.product,r.qty,(r.refund||0),r.reason,r.restocked?'Yes':'No']);
+  const invRows      = state.inventory.map(p=>[p.name,p.category||'—',p.stock,(p.costPrice||0),(p.sellPrice||0),((p.stock||0)*(p.costPrice||0))]);
+
+  function makeSheet(headers, rows) {
+    const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+    // Bold header row
+    const range = XLSX.utils.decode_range(ws['!ref']);
+    for (let c = range.s.c; c <= range.e.c; c++) {
+      const cell = ws[XLSX.utils.encode_cell({r:0, c})];
+      if (cell) cell.s = {font:{bold:true}, fill:{fgColor:{rgb:'1D6F42'}}, color:{rgb:'FFFFFF'}};
+    }
+    // Auto column widths
+    ws['!cols'] = headers.map((h,i) => ({
+      wch: Math.max(h.length, ...rows.map(r => String(r[i]||'').length), 10)
+    }));
+    return ws;
+  }
+
+  if (type === 'full' || type === 'sales')     XLSX.utils.book_append_sheet(wb, makeSheet(salesHeaders, salesRows), 'Sales');
+  if (type === 'full' || type === 'expenses')  XLSX.utils.book_append_sheet(wb, makeSheet(expHeaders, expRows), 'Expenses');
+  if (type === 'full' || type === 'returns')   XLSX.utils.book_append_sheet(wb, makeSheet(retHeaders, retRows), 'Returns');
+  if (type === 'full' || type === 'inventory') XLSX.utils.book_append_sheet(wb, makeSheet(invHeaders, invRows), 'Inventory');
+
+  // Add summary sheet for full export
+  if (type === 'full') {
+    const totalRev = state.sales.filter(s=>s.status==='completed').reduce((s,e)=>s+(e.amount||0),0);
+    const totalExp = state.expenses.reduce((s,e)=>s+(e.amount||0),0);
+    const totalRef = state.returns.reduce((s,e)=>s+(e.refund||0),0);
+    const summaryRows = [
+      ['Metric','Value'],
+      ['Export Date', d],
+      ['Total Sales Records', state.sales.length],
+      ['Total Revenue (K)', totalRev.toFixed(2)],
+      ['Total Expenses (K)', totalExp.toFixed(2)],
+      ['Total Refunds (K)', totalRef.toFixed(2)],
+      ['Net Profit (K)', (totalRev - totalExp - totalRef).toFixed(2)],
+      ['Inventory Items', state.inventory.length],
+    ];
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(summaryRows), 'Summary');
+  }
+
+  XLSX.writeFile(wb, 'ShadesApparel_' + type + '_' + d + '.xlsx');
+  closeModal();
+  showToast('Excel file downloaded ✓', 'success');
+}
+
+
+// ═══════════════════════════════════════════════════════════
 //  HELPERS
 // ═══════════════════════════════════════════════════════════
 function fmt(n) { return (n||0).toLocaleString('en',{minimumFractionDigits:2,maximumFractionDigits:2}); }
@@ -2948,6 +3141,11 @@ function init() {
 function setupFirestoreListeners() {
   if (window._listenersActive) return;
   if (!window._DEMO && window._db) {
+    // Wait for anonymous auth before opening Firestore listeners
+    if (!window._authReady) {
+      window._authReadyCb = setupFirestoreListeners;
+      return;
+    }
     window._listenersActive = true;
     const {collection,query,orderBy,onSnapshot} = window._fs;
     const cols = [{col:'sales',key:'sales'},{col:'expenses',key:'expenses'},{col:'returns',key:'returns'},{col:'inventory',key:'inventory'}];
@@ -3013,15 +3211,42 @@ function setupFirestoreListeners() {
 }
 
 window.addEventListener('firebase-ready', () => {
-  // Hide the loading overlay
   const lo = document.getElementById('loading-overlay');
   if (lo) { lo.style.opacity='0'; setTimeout(()=>lo.style.display='none',400); }
-  // Only init the app if already logged in (session exists)
-  if (checkSessionOnLoad()) {
-    init();
-  }
-  // else: login screen is already showing — init() called after successful login
+  if (checkSessionOnLoad()) { init(); }
 });
+
+// ═══════════════════════════════════════════════════════════
+//  PWA INSTALL PROMPT
+// ═══════════════════════════════════════════════════════════
+window._installPrompt = null;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  window._installPrompt = e;
+  // Show install button in topbar
+  const btn = document.getElementById('install-btn');
+  if (btn) btn.style.display = 'flex';
+});
+window.addEventListener('appinstalled', () => {
+  window._installPrompt = null;
+  const btn = document.getElementById('install-btn');
+  if (btn) btn.style.display = 'none';
+  showToast('App installed successfully! 🎉', 'success');
+});
+function triggerInstall() {
+  if (window._installPrompt) {
+    window._installPrompt.prompt();
+    window._installPrompt.userChoice.then(choice => {
+      if (choice.outcome === 'accepted') showToast('Installing Shade\'s Apparel...', 'success');
+      window._installPrompt = null;
+      const btn = document.getElementById('install-btn');
+      if (btn) btn.style.display = 'none';
+    });
+  } else {
+    // iOS fallback — no beforeinstallprompt on Safari
+    showToast('To install: tap Share → Add to Home Screen', 'info');
+  }
+}
 
 
 // ═══════════════════════════════════════════════════════════
@@ -3042,38 +3267,19 @@ window.addEventListener('offline', () => { if (isOwner()) renderSettings(); show
 
 
 function changeStaffPin() {
-  var current = prompt('Enter current Owner PIN to authorise:');
-  if (current === null) return;
-  const storedOwner = lsLoad('pin');
-  const checkAndChange = async () => {
-    let ownerOk = false;
-    if (!storedOwner) { ownerOk = current === '1234'; }
-    else { ownerOk = (await hashPin(current)) === storedOwner; }
-    if (!ownerOk) { showToast('Incorrect Owner PIN','error'); return; }
-    var newPin = prompt('Enter new Staff PIN (4 digits):');
-    if (newPin === null || newPin.trim() === '') return;
-    var confirm2 = prompt('Confirm new Staff PIN:');
-    if (newPin !== confirm2) { showToast('PINs do not match','error'); return; }
-    const hash = await hashPin(newPin);
-    lsSave('staffPin', hash);
-    showToast('Staff PIN updated ✓','success');
-  };
-  checkAndChange();
+  // Use the same PIN modal — owner verifies first, then sets new staff PIN
+  _pinMode = 10; // custom mode: staff PIN change
+  _pinBuffer = ''; _newPinTemp = '';
+  document.getElementById('pin-title').textContent = 'Change Staff PIN';
+  document.getElementById('pin-desc').textContent = 'Enter your Owner PIN to authorise';
+  document.getElementById('pin-error').textContent = '';
+  updatePinDots();
+  document.getElementById('pin-overlay').classList.add('open');
 }
 
 function requirePin(action) {
   if (isStaff()) { showToast('Access restricted — owner only','error'); return; }
-  var pin = prompt('Enter your Owner PIN to confirm:');
-  if (pin === null) return;
-  const storedOwner = lsLoad('pin');
-  const verify = async () => {
-    let ok = false;
-    if (!storedOwner) { ok = pin === '1234'; }
-    else { ok = (await hashPin(pin)) === storedOwner; }
-    if (!ok) { showToast('Incorrect PIN','error'); return; }
-    action();
-  };
-  verify();
+  showPinModal(action);
 }
 
 async function deleteRecord(coll, id) {
