@@ -2678,26 +2678,19 @@ async function saveReturn() {
     if (invIdx !== -1) {
       const item = state.inventory[invIdx];
       const currentStock = item.stock || 0;
+      // baseStock is the highest stock level the owner has ever set manually
+      // Stock should never go above this — prevents fake returns inflating inventory
+      const baseStock = item.baseStock ?? currentStock;
+      const room = baseStock - currentStock;
 
-      // Only count sales that happened AFTER the last manual restock
-      // Sales before a restock are already "settled" — owner bought new stock knowing those were sold
-      const lastRestockDate = item.lastRestockDate || '2000-01-01';
-      const totalSold = state.sales
-        .filter(s => s.status === 'completed' && s.invId === invId && s.date >= lastRestockDate)
-        .reduce((sum, s) => sum + (s.qty || 0), 0);
-      const totalAlreadyReturned = state.returns
-        .filter(r => r.invId === invId && r.restocked && r.date >= lastRestockDate)
-        .reduce((sum, r) => sum + (r.qty || 0), 0);
-      const maxRestorable = totalSold - totalAlreadyReturned;
-
-      if (maxRestorable <= 0) {
-        showToast('No sold items to return since last restock — skipped', 'error');
+      if (room <= 0) {
+        showToast('Stock is already full — restock skipped', 'error');
       } else {
-        const actualQty = Math.min(qty, maxRestorable);
+        const actualQty = Math.min(qty, room);
         const restoredStock = currentStock + actualQty;
         tasks.push(updateInventoryStock(invId, restoredStock, item));
         toastMsg = actualQty < qty
-          ? `Return saved · +${actualQty} restocked (stock full after that)`
+          ? `Return saved · +${actualQty} restocked (hit stock ceiling)`
           : `Return saved · +${actualQty} restocked`;
       }
     }
