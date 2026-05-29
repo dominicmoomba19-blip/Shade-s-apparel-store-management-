@@ -1214,7 +1214,7 @@ self.addEventListener('fetch', e => {
         <input type="date" id="date-to" class="date-filter" style="width:130px;cursor:pointer" title="To date" onchange="onDateRange()" placeholder="To"/>
         <div id="sync-dot" title="Sync status" style="width:8px;height:8px;border-radius:50%;background:var(--muted);margin-right:2px;transition:background 0.4s;cursor:pointer;padding:8px;box-sizing:content-box;margin:-8px 2px -8px -8px" onclick="navigate('settings',null)"></div>
         <div id="offline-badge" title="Unsynced changes" style="display:none;font-size:10px;font-weight:800;background:var(--yellow);color:#000;border-radius:20px;padding:2px 7px;cursor:pointer" onclick="navigate('settings',null)">⏳ Unsynced</div>
-        <button id="install-btn" onclick="triggerInstall()" title="Install app" style="display:none;align-items:center;gap:5px;font-size:11px;font-weight:700;background:linear-gradient(135deg,var(--accent),var(--purple));color:#fff;border:none;border-radius:20px;padding:5px 11px;cursor:pointer">
+        <button id="install-btn" onclick="triggerInstall()" title="Install app" style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:700;background:linear-gradient(135deg,var(--accent),var(--purple));color:#fff;border:none;border-radius:20px;padding:5px 11px;cursor:pointer">
           ⬇️ Install
         </button>
         <button class="icon-btn" onclick="toggleTheme()" title="Toggle theme">
@@ -3282,17 +3282,103 @@ window.addEventListener('appinstalled', () => {
   showToast('App installed successfully! 🎉', 'success');
 });
 function triggerInstall() {
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+  if (isStandalone) { showInstallModal('already'); return; }
+  showInstallModal(window._installPrompt ? 'android' : 'ios');
+}
+
+function showInstallModal(type) {
+  const overlay = document.getElementById('modal-overlay');
+  const titleEl = document.getElementById('modal-title');
+  const bodyEl  = document.getElementById('modal-body');
+  titleEl.textContent = "Install Shade's Apparel";
+  if (type === 'already') {
+    bodyEl.innerHTML = `
+      <div style="text-align:center;padding:20px 0">
+        <div style="font-size:48px;margin-bottom:12px">✅</div>
+        <div style="font-size:16px;font-weight:700;margin-bottom:8px">Already Installed!</div>
+        <div style="color:var(--muted);font-size:13px">Shade's Apparel is already running as an installed app on this device.</div>
+      </div>`;
+  } else if (type === 'android') {
+    bodyEl.innerHTML = `
+      <div style="display:flex;flex-direction:column;gap:16px">
+        <div style="background:linear-gradient(135deg,var(--accent),var(--purple));border-radius:16px;padding:20px;text-align:center;color:#fff">
+          <div style="font-size:36px;margin-bottom:8px">🛍️</div>
+          <div style="font-size:15px;font-weight:800">Shade's Apparel</div>
+          <div style="font-size:12px;opacity:0.8;margin-top:4px">Business Management System</div>
+        </div>
+        <div style="font-size:13px;color:var(--muted);line-height:1.6">Install this app on your device for fast, offline access — no browser needed.</div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;align-items:center;gap:12px;background:var(--card);border-radius:12px;padding:12px">
+            <span style="font-size:20px">⚡</span>
+            <div><div style="font-size:13px;font-weight:700">Works offline</div><div style="font-size:11px;color:var(--muted)">Access your data even without internet</div></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;background:var(--card);border-radius:12px;padding:12px">
+            <span style="font-size:20px">🔒</span>
+            <div><div style="font-size:13px;font-weight:700">Secure & private</div><div style="font-size:11px;color:var(--muted)">PIN-protected, your data stays yours</div></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;background:var(--card);border-radius:12px;padding:12px">
+            <span style="font-size:20px">📱</span>
+            <div><div style="font-size:13px;font-weight:700">Feels like a real app</div><div style="font-size:11px;color:var(--muted)">Fullscreen, no browser bars</div></div>
+          </div>
+        </div>
+        <button onclick="doAndroidInstall()" style="width:100%;padding:14px;background:linear-gradient(135deg,var(--accent),var(--purple));color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:800;cursor:pointer;box-shadow:0 4px 16px rgba(79,142,247,0.4)">⬇️ Install Now</button>
+      </div>`;
+  } else {
+    const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    bodyEl.innerHTML = `
+      <div style="display:flex;flex-direction:column;gap:16px">
+        <div style="background:linear-gradient(135deg,var(--accent),var(--purple));border-radius:16px;padding:20px;text-align:center;color:#fff">
+          <div style="font-size:36px;margin-bottom:8px">🛍️</div>
+          <div style="font-size:15px;font-weight:800">Shade's Apparel</div>
+          <div style="font-size:12px;opacity:0.8;margin-top:4px">Business Management System</div>
+        </div>
+        <div style="font-size:13px;color:var(--muted)">Follow these steps to install:</div>
+        ${isIOS ? `
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;align-items:center;gap:12px;background:var(--card);border-radius:12px;padding:12px">
+              <span style="font-size:20px;min-width:28px;text-align:center">1️⃣</span>
+              <div style="font-size:13px">Tap the <strong>Share</strong> button at the bottom of Safari</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;background:var(--card);border-radius:12px;padding:12px">
+              <span style="font-size:20px;min-width:28px;text-align:center">2️⃣</span>
+              <div style="font-size:13px">Scroll down and tap <strong>"Add to Home Screen"</strong></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;background:var(--card);border-radius:12px;padding:12px">
+              <span style="font-size:20px;min-width:28px;text-align:center">3️⃣</span>
+              <div style="font-size:13px">Tap <strong>"Add"</strong> in the top right — done!</div>
+            </div>
+          </div>` : `
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;align-items:center;gap:12px;background:var(--card);border-radius:12px;padding:12px">
+              <span style="font-size:20px;min-width:28px;text-align:center">1️⃣</span>
+              <div style="font-size:13px">Tap the <strong>menu (⋮)</strong> in your browser</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;background:var(--card);border-radius:12px;padding:12px">
+              <span style="font-size:20px;min-width:28px;text-align:center">2️⃣</span>
+              <div style="font-size:13px">Tap <strong>"Add to Home Screen"</strong> or <strong>"Install App"</strong></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;background:var(--card);border-radius:12px;padding:12px">
+              <span style="font-size:20px;min-width:28px;text-align:center">3️⃣</span>
+              <div style="font-size:13px">Tap <strong>"Add"</strong> to confirm — done!</div>
+            </div>
+          </div>`}
+        <button onclick="closeModal()" style="width:100%;padding:12px;background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:12px;font-size:14px;font-weight:700;cursor:pointer">Got it</button>
+      </div>`;
+  }
+  overlay.classList.add('open');
+}
+
+async function doAndroidInstall() {
+  closeModal();
   if (window._installPrompt) {
     window._installPrompt.prompt();
     window._installPrompt.userChoice.then(choice => {
-      if (choice.outcome === 'accepted') showToast('Installing Shade\'s Apparel...', 'success');
+      if (choice.outcome === 'accepted') showToast("Installing Shade's Apparel... 🎉", 'success');
       window._installPrompt = null;
       const btn = document.getElementById('install-btn');
       if (btn) btn.style.display = 'none';
     });
-  } else {
-    // iOS fallback — no beforeinstallprompt on Safari
-    showToast('To install: tap Share → Add to Home Screen', 'info');
   }
 }
 
