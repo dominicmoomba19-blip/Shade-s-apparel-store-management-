@@ -2665,32 +2665,50 @@ async function saveReturn() {
   const restock = document.getElementById('f-restock')?.value || 'yes';
   if (!prod || qty <= 0 || refund <= 0) { showToast('Please fill all fields correctly','error'); return; }
 
+  // Show loading state on button
+  const saveBtn = document.querySelector('#modal-body button[onclick="saveReturn()"], button[onclick="saveReturn()"]');
+  if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Saving...'; }
+
+  const tasks = [];
+  let toastMsg = '';
+
   // Restore stock if linked to inventory and restock is yes
   if (invId && restock === 'yes') {
     const invIdx = state.inventory.findIndex(p=>p.id===invId);
     if (invIdx !== -1) {
-      // Only restock up to what was actually sold minus what was already returned
+      const item = state.inventory[invIdx];
+      const currentStock = item.stock || 0;
+
+      // Only count sales that happened AFTER the last manual restock
+      // Sales before a restock are already "settled" — owner bought new stock knowing those were sold
+      const lastRestockDate = item.lastRestockDate || '2000-01-01';
       const totalSold = state.sales
-        .filter(s => s.status === 'completed' && s.invId === invId)
+        .filter(s => s.status === 'completed' && s.invId === invId && s.date >= lastRestockDate)
         .reduce((sum, s) => sum + (s.qty || 0), 0);
       const totalAlreadyReturned = state.returns
-        .filter(r => r.invId === invId && r.restocked)
+        .filter(r => r.invId === invId && r.restocked && r.date >= lastRestockDate)
         .reduce((sum, r) => sum + (r.qty || 0), 0);
       const maxRestorable = totalSold - totalAlreadyReturned;
+
       if (maxRestorable <= 0) {
-        showToast('No sold stock to return for this product — restock skipped', 'error');
+        showToast('No sold items to return since last restock — skipped', 'error');
       } else {
         const actualQty = Math.min(qty, maxRestorable);
-        const restoredStock = (state.inventory[invIdx].stock || 0) + actualQty;
-        await updateInventoryStock(invId, restoredStock, state.inventory[invIdx]);
-        const msg = actualQty < qty
-          ? `+${actualQty} restocked (capped — only ${maxRestorable} units were sold)`
-          : `+${actualQty} restocked to ${state.inventory[invIdx].name}`;
-        showToast(msg, 'success');
+        const restoredStock = currentStock + actualQty;
+        tasks.push(updateInventoryStock(invId, restoredStock, item));
+        toastMsg = actualQty < qty
+          ? `Return saved · +${actualQty} restocked (stock full after that)`
+          : `Return saved · +${actualQty} restocked`;
       }
     }
   }
-  saveRecord('returns',{product:prod,qty,refund,reason,invId,restocked:restock==='yes'});
+
+  // Save return record and inventory update in parallel
+  tasks.push(saveRecord('returns', {product:prod, qty, refund, reason, invId, restocked:restock==='yes'}));
+  await Promise.all(tasks);
+
+  closeModal();
+  showToast(toastMsg || 'Return saved ✓', 'success');
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -3422,7 +3440,7 @@ async function saveProduct() {
   }
   const today  = new Date().toISOString().split('T')[0];
   const id     = 'inv-' + Date.now();
-  const rec    = { id, name, category:cat, sku, costPrice:cost, sellPrice:sell, stock, lowThreshold:low, description:desc, date:today, timestamp:Date.now(), restockLog:[] };
+  const rec    = { id, name, category:cat, sku, costPrice:cost, sellPrice:sell, stock, baseStock:stock, lowThreshold:low, description:desc, date:today, timestamp:Date.now(), restockLog:[] };
   state.inventory.unshift(rec);
   lsSave('inventory', state.inventory);
   if (!window._DEMO && window._db) {
@@ -3501,7 +3519,7 @@ async function confirmRestock(id) {
   const newStock = (prod.stock||0) + addQty;
   const logEntry = { qty:addQty, date:today, note:note||'' };
   const restockLog = [...(prod.restockLog||[]), logEntry];
-  const updates = { stock:newStock, restockLog };
+  const updates = { stock:newStock, baseStock:newStock, lastRestockDate:today, restockLog };
   if (newCost !== null && newCost > 0) updates.costPrice = newCost;
   state.inventory[idx] = {...prod, ...updates};
   lsSave('inventory', state.inventory);
@@ -3571,7 +3589,7 @@ async function saveEditProduct(id) {
   if (sell > 0 && cost > 0 && sell < cost) {
     if (!confirm(`Selling price (K${sell.toFixed(2)}) is lower than cost price (K${cost.toFixed(2)}). This will result in a loss. Continue?`)) return;
   }
-  const updates = { name, category:cat, sku, costPrice:cost, sellPrice:sell, stock, lowThreshold:low, description:desc };
+  const updates = { name, category:cat, sku, costPrice:cost, sellPrice:sell, stock, baseStock:stock, lowThreshold:low, description:desc };
   const idx = state.inventory.findIndex(p=>p.id===id);
   if (idx !== -1) { state.inventory[idx] = {...state.inventory[idx], ...updates}; lsSave('inventory', state.inventory); }
   if (!window._DEMO && window._db) {
