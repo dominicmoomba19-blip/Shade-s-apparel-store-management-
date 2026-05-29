@@ -34,8 +34,8 @@
       {src:b64,sizes:"512x512",type:"image/jpeg",purpose:"any maskable"}
     ]
   };
-  var blob=new Blob([JSON.stringify(manifest)],{type:'application/manifest+json'});
-  document.getElementById('pwa-manifest').href=URL.createObjectURL(blob);
+  var mBlob=new Blob([JSON.stringify(manifest)],{type:'application/manifest+json'});
+  document.getElementById('pwa-manifest').href=URL.createObjectURL(mBlob);
 })();
 </script>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Epilogue:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
@@ -276,6 +276,7 @@ button { font-family: var(--font-body); cursor: pointer; }
 body.is-staff .action-btn.edit,
 body.is-staff .action-btn.del,
 body.is-staff #section-inventory .inv-card-actions .action-btn { display:none !important; }
+body.is-staff #bulk-bar button[onclick*="bulkDelete"] { display:none !important; }
 body.is-staff #section-inventory .inv-restock-btn { display:none !important; }
 body.is-staff #section-inventory .btn-primary { display:none !important; }
 body.is-staff #section-settings { display:none !important; }
@@ -648,23 +649,6 @@ tbody td { padding: 12px 16px; color: var(--text); font-size: 13.5px; }
   #date-from, #date-to { display: flex; }
 }
 
-/* ── RECEIPT — TABLET & DESKTOP ── */
-@media (min-width: 769px) {
-  .receipt-card {
-    width: min(480px, 90vw);
-    display: grid;
-    grid-template-rows: auto 1fr auto auto;
-  }
-  .receipt-header { padding: 28px 32px 20px; }
-  .receipt-logo { font-size: 26px; }
-  .receipt-sub { font-size: 12px; }
-  .receipt-body { padding: 22px 32px; }
-  .receipt-row { font-size: 14px; margin-bottom: 9px; }
-  .receipt-total-row { font-size: 20px; padding-top: 14px; }
-  .receipt-footer { font-size: 12px; padding: 12px 32px 20px; }
-  .receipt-actions { padding: 0 32px 24px; gap: 12px; }
-  .receipt-btn { padding: 13px; font-size: 14px; border-radius: 12px; }
-}
 
 /* ── OVERLAY ── */
 #sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 40; backdrop-filter: blur(2px); }
@@ -813,121 +797,24 @@ tbody td { padding: 12px 16px; color: var(--text); font-size: 13.5px; }
 .inv-empty-icon { font-size:48px; margin-bottom:12px; opacity:0.5; }
 .inv-summary-bar { display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:10px; margin-bottom:18px; }
 
-/* ── RECEIPT OVERLAY ── */
-#receipt-overlay {
-  position:fixed; inset:0; z-index:10000; display:flex;
-  align-items:center; justify-content:center;
-  background:rgba(0,0,0,0.72); backdrop-filter:blur(6px);
-  opacity:0; pointer-events:none; transition:opacity 0.22s;
-}
-#receipt-overlay.open { opacity:1; pointer-events:all; }
-.receipt-card {
-  background:#fff; color:#111; width:min(380px,92vw);
-  border-radius:16px; overflow:hidden;
-  box-shadow:0 32px 80px rgba(0,0,0,0.6);
-  font-family:'Epilogue',sans-serif;
-  animation:fadeUp 0.28s cubic-bezier(0.22,0.61,0.36,1) both;
-}
-.receipt-header {
-  background:linear-gradient(135deg,#4f8ef7,#a66cff);
-  color:#fff; text-align:center; padding:22px 24px 16px;
-}
-.receipt-logo { font-family:'Space Grotesk',sans-serif; font-size:22px; font-weight:800; letter-spacing:-0.5px; }
-.receipt-sub { font-size:11px; opacity:0.75; margin-top:3px; }
-.receipt-divider { border:none; border-top:1px dashed #ddd; margin:12px 0; }
-.receipt-body { padding:18px 22px; }
-.receipt-row { display:flex; justify-content:space-between; font-size:13px; margin-bottom:7px; }
-.receipt-row .lbl { color:#666; }
-.receipt-row .val { font-weight:600; color:#111; text-align:right; max-width:60%; }
-.receipt-total-row { display:flex; justify-content:space-between; font-size:16px; font-weight:800;
-  color:#111; border-top:2px solid #111; padding-top:10px; margin-top:6px; font-family:'Space Grotesk',sans-serif; }
-.receipt-badge {
-  display:inline-block; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:700;
-  letter-spacing:0.3px;
-}
-.receipt-badge.completed { background:#d1fae5; color:#065f46; }
-.receipt-badge.pending   { background:#fef3c7; color:#92400e; }
-.receipt-footer { text-align:center; padding:10px 22px 18px; font-size:11px; color:#999; }
-.receipt-actions { display:flex; gap:10px; padding:0 22px 18px; }
-.receipt-btn {
-  flex:1; padding:11px; border-radius:10px; border:none; font-size:13px;
-  font-weight:700; cursor:pointer; font-family:'Epilogue',sans-serif; transition:all 0.15s;
-}
-.receipt-btn-print { background:linear-gradient(135deg,#4f8ef7,#a66cff); color:#fff; box-shadow:0 4px 14px rgba(79,142,247,0.4); }
-.receipt-btn-print:hover { transform:translateY(-1px); box-shadow:0 6px 18px rgba(79,142,247,0.5); }
-.receipt-btn-close { background:#f1f5f9; color:#475569; }
-.receipt-btn-close:hover { background:#e2e8f0; }
-/* ── REPORT PRINT (default) ── */
+/* ── REPORT PRINT ── */
 @media print {
-  /* Hide everything except the reports section — but NOT when printing a receipt */
-  body:not(.printing-receipt) #sidebar,
-  body:not(.printing-receipt) #topbar,
-  body:not(.printing-receipt) #notif-bar,
-  body:not(.printing-receipt) #modal-overlay,
-  body:not(.printing-receipt) #pin-overlay,
-  body:not(.printing-receipt) #receipt-overlay,
-  body:not(.printing-receipt) #sidebar-overlay,
-  body:not(.printing-receipt) .no-print,
-  body:not(.printing-receipt) .section:not(#section-reports) { display:none !important; }
-  body:not(.printing-receipt) #app    { display:block !important; height:auto !important; overflow:visible !important; }
-  body:not(.printing-receipt) #main   { overflow:visible !important; }
-  body:not(.printing-receipt) #content { padding:8px !important; overflow:visible !important; }
-  body:not(.printing-receipt) #section-reports { display:block !important; }
-  body:not(.printing-receipt) .section-head .btn { display:none !important; }
-  body:not(.printing-receipt) { background:#fff !important; color:#111 !important; }
-  body:not(.printing-receipt) .chart-card,
-  body:not(.printing-receipt) .table-card,
-  body:not(.printing-receipt) .pl-summary { break-inside:avoid; margin-bottom:12px; }
-  body:not(.printing-receipt) .pl-item { background:#f5f5f5 !important; border:1px solid #ccc !important; }
-  body:not(.printing-receipt) .pl-item-val { color:#111 !important; }
-  body:not(.printing-receipt) thead th { background:#eee !important; color:#333 !important; }
-  body:not(.printing-receipt) tbody td { color:#111 !important; }
+  #sidebar, #topbar, #notif-bar, #modal-overlay, #pin-overlay,
+  #sidebar-overlay, .no-print,
+  .section:not(#section-reports) { display:none !important; }
+  #app    { display:block !important; height:auto !important; overflow:visible !important; }
+  #main   { overflow:visible !important; }
+  #content { padding:8px !important; overflow:visible !important; }
+  #section-reports { display:block !important; }
+  .section-head .btn { display:none !important; }
+  body { background:#fff !important; color:#111 !important; }
+  .chart-card, .table-card, .pl-summary { break-inside:avoid; margin-bottom:12px; }
+  .pl-item { background:#f5f5f5 !important; border:1px solid #ccc !important; }
+  .pl-item-val { color:#111 !important; }
+  thead th { background:#eee !important; color:#333 !important; }
+  tbody td { color:#111 !important; }
 }
 
-/* ── THERMAL RECEIPT PRINT (80mm) ── */
-@media print {
-  body.printing-receipt * { display:none !important; }
-  body.printing-receipt #receipt-overlay,
-  body.printing-receipt #receipt-overlay * { display:block !important; }
-  body.printing-receipt #receipt-overlay {
-    position:static !important; background:none !important;
-    backdrop-filter:none !important; opacity:1 !important;
-    pointer-events:all !important; padding:0 !important;
-    display:block !important;
-  }
-  body.printing-receipt .receipt-card {
-    width:72mm !important; max-width:72mm !important;
-    margin:0 auto !important; border-radius:0 !important;
-    box-shadow:none !important; font-size:11px !important;
-    zoom:1 !important; transform:none !important;
-  }
-  body.printing-receipt .receipt-header {
-    background:none !important; color:#000 !important;
-    border-bottom:2px solid #000 !important; padding:8px 10px !important;
-  }
-  body.printing-receipt .receipt-logo {
-    font-size:16px !important; color:#000 !important;
-    -webkit-text-fill-color:#000 !important;
-    background:none !important; font-weight:900 !important;
-    text-align:center;
-  }
-  body.printing-receipt .receipt-sub { color:#333 !important; text-align:center; }
-  body.printing-receipt .receipt-body { padding:8px 10px !important; }
-  body.printing-receipt .receipt-row { font-size:11px !important; margin-bottom:4px !important; }
-  body.printing-receipt .receipt-row .lbl { color:#444 !important; }
-  body.printing-receipt .receipt-row .val { color:#000 !important; font-weight:700 !important; }
-  body.printing-receipt .receipt-total-row { font-size:14px !important; padding-top:6px !important; border-top:2px dashed #000 !important; }
-  body.printing-receipt .receipt-divider { border-top:1px dashed #999 !important; }
-  body.printing-receipt .receipt-badge { border:1px solid #000 !important; background:none !important; color:#000 !important; }
-  body.printing-receipt .receipt-footer { font-size:10px !important; color:#444 !important; padding:6px 10px 10px !important; text-align:center; border-top:1px dashed #999; }
-  body.printing-receipt .receipt-actions { display:none !important; }
-  body.printing-receipt {
-    width:80mm !important; zoom:1 !important;
-    -webkit-print-color-adjust:exact !important;
-    print-color-adjust:exact !important;
-  }
-  @page { size:80mm auto; margin:4mm; }
-}
 </style>
 <script>
 // ═══════════════════════════════════════════════════════════
@@ -984,7 +871,8 @@ self.addEventListener('fetch', e => {
   `;
   const blob = new Blob([swCode], {type:'text/javascript'});
   const swUrl = URL.createObjectURL(blob);
-  navigator.serviceWorker.register(swUrl, {scope: '/'})
+  var swScope = window.location.href.replace(/[^/]*$/, '') || '/';
+  navigator.serviceWorker.register(swUrl, {scope: swScope})
     .then(reg => { console.log('SW registered'); })
     .catch(e => console.warn('SW registration failed:', e));
 
@@ -1024,22 +912,6 @@ self.addEventListener('fetch', e => {
       <button class="modal-close" onclick="closeModal()">✕</button>
     </div>
     <div id="modal-body"></div>
-  </div>
-</div>
-
-<!-- RECEIPT OVERLAY -->
-<div id="receipt-overlay" onclick="if(event.target===this)closeReceipt()">
-  <div class="receipt-card" id="receipt-card">
-    <div class="receipt-header">
-      <div class="receipt-logo">Shade's Apparel</div>
-      <div class="receipt-sub">Official Sales Receipt</div>
-    </div>
-    <div class="receipt-body" id="receipt-body"></div>
-    <div class="receipt-footer" id="receipt-footer">Thank you for your purchase! 🛍️</div>
-    <div class="receipt-actions">
-      <button class="receipt-btn receipt-btn-print" onclick="printReceipt()">🖨️ Print</button>
-      <button class="receipt-btn receipt-btn-close" onclick="closeReceipt()">Close</button>
-    </div>
   </div>
 </div>
 
@@ -1255,7 +1127,7 @@ self.addEventListener('fetch', e => {
             <button class="btn" style="padding:7px 14px;font-size:12px;background:rgba(245,54,92,0.12);color:var(--red);border:1px solid rgba(245,54,92,0.3)" onclick="bulkDelete()">&#128465; Delete</button>
             <button class="btn" style="padding:7px 14px;font-size:12px;background:var(--card2);color:var(--muted);border:1px solid var(--border);margin-left:auto" onclick="clearSelection()">&#10005; Deselect All</button>
           </div>
-          <div style="overflow-x:auto"><table><thead><tr><th style="width:36px"><input type="checkbox" id="select-all-sales" onchange="toggleSelectAll(this)" style="accent-color:var(--accent);width:15px;height:15px;cursor:pointer"></th><th>Product</th><th>Receipt #</th><th>Qty</th><th>Price (K)</th><th>Amount (K)</th><th>Date</th><th>Status</th><th></th></tr></thead><tbody id="sales-tbody"></tbody></table></div>
+          <div style="overflow-x:auto"><table><thead><tr><th style="width:36px"><input type="checkbox" id="select-all-sales" onchange="toggleSelectAll(this)" style="accent-color:var(--accent);width:15px;height:15px;cursor:pointer"></th><th>Product</th><th>Qty</th><th>Price (K)</th><th>Amount (K)</th><th>Date</th><th>Status</th><th></th></tr></thead><tbody id="sales-tbody"></tbody></table></div>
         </div>
       </div>
 
@@ -1911,7 +1783,6 @@ function renderSales() {
     <tr data-id="${s.id}" class="${state.selectedSales&&state.selectedSales.has(s.id)?'row-selected':''}">
       <td><input type="checkbox" class="sale-cb" data-id="${s.id}" onchange="onSaleCheck(this)" ${state.selectedSales&&state.selectedSales.has(s.id)?'checked':''} style="accent-color:var(--accent);width:15px;height:15px;cursor:pointer"></td>
       <td style="font-weight:600">${esc(s.product)}</td>
-      <td style="color:var(--muted);font-size:12px">${s.receiptNo ? '#' + esc(s.receiptNo) : '—'}</td>
       <td style="color:var(--muted)">${parseInt(s.qty)||0}</td>
       <td style="color:var(--muted)">${(s.price||0).toFixed(2)}</td>
       <td style="font-weight:700">K${(s.amount||0).toFixed(2)}</td>
@@ -1919,7 +1790,6 @@ function renderSales() {
       <td><span class="badge ${s.status==='completed'?'badge-green':'badge-yellow'}">${esc(s.status)}</span></td>
       <td><div class="action-btns">
         ${s.status==='pending'?`<button class="action-btn" style="color:var(--green);border-color:rgba(18,217,140,0.3)" onclick="quickCompleteSale('${s.id}')" title="Mark as completed">✓</button>`:''}
-        <button class="action-btn" style="color:var(--accent2);border-color:rgba(6,214,192,0.3)" onclick="showReceipt('${s.id}')" title="View Receipt">🧾</button>
         <button class="action-btn edit" onclick="editRecord('sales','${s.id}')">✏️</button>
         <button class="action-btn del"  onclick="deleteRecord('sales','${s.id}')">🗑️</button>
       </div></td>
@@ -2527,6 +2397,7 @@ async function bulkComplete() {
 }
 
 async function bulkDelete() {
+  if (isStaff()) { showToast('Staff cannot delete records', 'error'); return; }
   if (!state.selectedSales.size) return;
   const n = state.selectedSales.size;
   if (!confirm(`Delete ${n} sale(s)? This cannot be undone.`)) return;
@@ -2564,68 +2435,7 @@ function closeModal() {
 }
 
 // ═══════════════════════════════════════════════════════════
-//  RECEIPT
 // ═══════════════════════════════════════════════════════════
-function getNextReceiptNo() {
-  const last = parseInt(localStorage.getItem('shades_last_receipt') || '0');
-  const next = last + 1;
-  localStorage.setItem('shades_last_receipt', next.toString());
-  return String(next).padStart(5, '0');
-}
-
-function showReceipt(idOrSale, cartItems, cartStatus) {
-  const today = new Date().toISOString().split('T')[0];
-
-  if (cartItems && cartItems.length > 0) {
-    const receiptNo  = getNextReceiptNo();
-    const grandTotal = cartItems.reduce((s,i)=>s+i.amount,0);
-    const status     = cartStatus || idOrSale?.status || 'completed';
-    document.getElementById('receipt-body').innerHTML = `
-      <div class="receipt-row"><span class="lbl">Receipt No.</span><span class="val">#${receiptNo}</span></div>
-      <div class="receipt-row"><span class="lbl">Date</span><span class="val">${today}</span></div>
-      <div class="receipt-row"><span class="lbl">Status</span><span class="val"><span class="receipt-badge ${status}">${status}</span></span></div>
-      <hr class="receipt-divider"/>
-      ${cartItems.map(item=>`
-        <div class="receipt-row"><span class="lbl">${item.product}</span><span class="val">${item.qty} × K${item.price.toFixed(2)} = K${item.amount.toFixed(2)}</span></div>
-      `).join('')}
-      <hr class="receipt-divider"/>
-      <div class="receipt-total-row"><span>TOTAL</span><span>K${grandTotal.toFixed(2)}</span></div>
-    `;
-    document.getElementById('receipt-overlay').classList.add('open');
-    return;
-  }
-
-  // Single sale receipt
-  const sale = typeof idOrSale === 'string'
-    ? state.sales.find(s => s.id === idOrSale)
-    : idOrSale;
-  if (!sale) return;
-  // Use stored receipt number or generate new one
-  const receiptNo = sale.receiptNo || getNextReceiptNo();
-  document.getElementById('receipt-body').innerHTML = `
-    <div class="receipt-row"><span class="lbl">Receipt No.</span><span class="val">#${receiptNo}</span></div>
-    <div class="receipt-row"><span class="lbl">Date</span><span class="val">${sale.date}</span></div>
-    <div class="receipt-row"><span class="lbl">Status</span><span class="val"><span class="receipt-badge ${sale.status}">${sale.status}</span></span></div>
-    <hr class="receipt-divider"/>
-    <div class="receipt-row"><span class="lbl">Product</span><span class="val">${sale.product}</span></div>
-    <div class="receipt-row"><span class="lbl">Unit Price</span><span class="val">K${(sale.price||0).toFixed(2)}</span></div>
-    <div class="receipt-row"><span class="lbl">Quantity</span><span class="val">${sale.qty}</span></div>
-    <hr class="receipt-divider"/>
-    <div class="receipt-total-row"><span>TOTAL</span><span>K${(sale.amount||0).toFixed(2)}</span></div>
-  `;
-  document.getElementById('receipt-overlay').classList.add('open');
-}
-function closeReceipt() {
-  document.getElementById('receipt-overlay').classList.remove('open');
-}
-function printReceipt() {
-  document.body.classList.add('printing-receipt');
-  window.addEventListener('afterprint', function handler() {
-    document.body.classList.remove('printing-receipt');
-    window.removeEventListener('afterprint', handler);
-  });
-  window.print();
-}
 
 function calcTotal() {
   const qty = parseFloat(document.getElementById('f-qty')?.value)||0;
@@ -2798,10 +2608,6 @@ async function saveSale() {
       }
       lastRec = await saveRecord('sales',{product:item.product,qty:item.qty,price:item.price,amount:item.amount,status,invId:item.invId});
     }
-    const rNo = getNextReceiptNo();
-    if (status === 'completed') showReceipt({...lastRec, receiptNo: rNo}, cartSnapshot, status);
-    // Store receipt number on the last sale record
-    if (lastRec) updateRecord('sales', lastRec.id, {receiptNo: rNo});
     window._cart = [];
     return;
   }
@@ -2820,12 +2626,6 @@ async function saveSale() {
     }
   }
   saveRecord('sales',{product:prod,qty,price,amount:qty*price,status,invId}).then(savedRec => {
-    if (status === 'completed' && savedRec) {
-      const rNo = getNextReceiptNo();
-      savedRec.receiptNo = rNo;
-      updateRecord('sales', savedRec.id, {receiptNo: rNo});
-      showReceipt({...savedRec, receiptNo: rNo});
-    }
   });
 }
 function saveExpense() {
@@ -2910,9 +2710,6 @@ async function quickCompleteSale(id) {
     }
   }
   await updateRecord('sales', id, { status: 'completed' });
-  // Show receipt after completing
-  const updated = state.sales.find(r=>r.id===id);
-  if (updated) showReceipt(updated);
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -3048,12 +2845,12 @@ async function doExportExcel(type) {
   const wb   = XLSX.utils.book_new();
   const d    = new Date().toISOString().split('T')[0];
 
-  const salesHeaders    = ['Receipt #','Date','Product','Qty','Unit Price (K)','Amount (K)','Status'];
+  const salesHeaders    = ['Date','Product','Qty','Unit Price (K)','Amount (K)','Status'];
   const expHeaders      = ['Date','Category','Description','Amount (K)'];
   const retHeaders      = ['Date','Product','Qty','Refund (K)','Reason','Restocked'];
   const invHeaders      = ['Product','Category','Stock','Cost Price (K)','Sell Price (K)','Value (K)'];
 
-  const salesRows    = state.sales.map(s=>[s.receiptNo||'—',s.date,s.product,s.qty,(s.price||0),(s.amount||0),s.status]);
+  const salesRows    = state.sales.map(s=>[s.date,s.product,s.qty,(s.price||0),(s.amount||0),s.status]);
   const expRows      = state.expenses.map(e=>[e.date,e.category,e.description,(e.amount||0)]);
   const retRows      = state.returns.map(r=>[r.date,r.product,r.qty,(r.refund||0),r.reason,r.restocked?'Yes':'No']);
   const invRows      = state.inventory.map(p=>[p.name,p.category||'—',p.stock,(p.costPrice||0),(p.sellPrice||0),((p.stock||0)*(p.costPrice||0))]);
@@ -3267,6 +3064,14 @@ window.addEventListener('firebase-ready', () => {
 // ═══════════════════════════════════════════════════════════
 //  PWA INSTALL PROMPT
 // ═══════════════════════════════════════════════════════════
+// Hide install button if already running as installed PWA
+if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
+  window.addEventListener('DOMContentLoaded', () => {
+    const btn = document.getElementById('install-btn');
+    if (btn) btn.style.display = 'none';
+  });
+}
+
 window._installPrompt = null;
 window.addEventListener('beforeinstallprompt', e => {
   e.preventDefault();
