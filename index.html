@@ -1663,19 +1663,20 @@ function monthlyAggData() {
   const months = {};
   for (let i=5;i>=0;i--) {
     const d = new Date(now.getFullYear(), now.getMonth()-i, 1);
-    const key = d.toLocaleDateString('en-US',{month:'short'});
-    months[key] = {label:key,revenue:0,expenses:0,returns:0,profit:0};
+    const key = d.toLocaleDateString('en-US',{month:'short',year:'2-digit'});
+    const label = d.toLocaleDateString('en-US',{month:'short'});
+    months[key] = {label,revenue:0,expenses:0,returns:0,profit:0};
   }
   state.sales.filter(s=>s.status==='completed').forEach(s=>{
-    const k = new Date(s.date).toLocaleDateString('en-US',{month:'short'});
+    const k = new Date(s.date).toLocaleDateString('en-US',{month:'short',year:'2-digit'});
     if (months[k]) months[k].revenue += s.amount||0;
   });
   state.expenses.forEach(e=>{
-    const k = new Date(e.date).toLocaleDateString('en-US',{month:'short'});
+    const k = new Date(e.date).toLocaleDateString('en-US',{month:'short',year:'2-digit'});
     if (months[k]) months[k].expenses += e.amount||0;
   });
   state.returns.forEach(r=>{
-    const k = new Date(r.date).toLocaleDateString('en-US',{month:'short'});
+    const k = new Date(r.date).toLocaleDateString('en-US',{month:'short',year:'2-digit'});
     if (months[k]) months[k].returns += r.refund||0;
   });
   Object.values(months).forEach(m=>m.profit=m.revenue-m.expenses-m.returns);
@@ -2079,7 +2080,8 @@ function clearAllNotifs() {
 function buildNotifItems() {
   const totalRev = state.sales.filter(s=>s.status==='completed').reduce((s,e)=>s+(e.amount||0),0);
   const totalExp = state.expenses.reduce((s,e)=>s+(e.amount||0),0);
-  const net = totalRev - totalExp;
+  const totalRef = state.returns.reduce((s,e)=>s+(e.refund||0),0);
+  const net = totalRev - totalExp - totalRef;
   const today = new Date().toISOString().split('T')[0];
   const todaySales = state.sales.filter(s=>s.date===today).reduce((s,e)=>s+(e.amount||0),0);
   const pending = state.sales.filter(s=>s.status==='pending').length;
@@ -2856,9 +2858,25 @@ async function saveReturn() {
   if (invId && restock === 'yes') {
     const invIdx = state.inventory.findIndex(p=>p.id===invId);
     if (invIdx !== -1) {
-      const restoredStock = (state.inventory[invIdx].stock||0) + qty;
-      await updateInventoryStock(invId, restoredStock, state.inventory[invIdx]);
-      showToast(`+${qty} restocked to ${state.inventory[invIdx].name}`,'success');
+      // Only restock up to what was actually sold minus what was already returned
+      const totalSold = state.sales
+        .filter(s => s.status === 'completed' && s.invId === invId)
+        .reduce((sum, s) => sum + (s.qty || 0), 0);
+      const totalAlreadyReturned = state.returns
+        .filter(r => r.invId === invId && r.restocked)
+        .reduce((sum, r) => sum + (r.qty || 0), 0);
+      const maxRestorable = totalSold - totalAlreadyReturned;
+      if (maxRestorable <= 0) {
+        showToast('No sold stock to return for this product — restock skipped', 'error');
+      } else {
+        const actualQty = Math.min(qty, maxRestorable);
+        const restoredStock = (state.inventory[invIdx].stock || 0) + actualQty;
+        await updateInventoryStock(invId, restoredStock, state.inventory[invIdx]);
+        const msg = actualQty < qty
+          ? `+${actualQty} restocked (capped — only ${maxRestorable} units were sold)`
+          : `+${actualQty} restocked to ${state.inventory[invIdx].name}`;
+        showToast(msg, 'success');
+      }
     }
   }
   saveRecord('returns',{product:prod,qty,refund,reason,invId,restocked:restock==='yes'});
