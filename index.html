@@ -2510,7 +2510,18 @@ async function bulkComplete() {
   });
   if (!ids.length) { showToast('Selected sales are already completed','info'); return; }
   if (!confirm(`Mark ${ids.length} sale(s) as completed?`)) return;
-  for (const id of ids) await updateRecord('sales', id, { status: 'completed' });
+  for (const id of ids) {
+    const sale = state.sales.find(r => r.id === id);
+    // Deduct stock for linked inventory items — same logic as quickCompleteSale
+    if (sale && sale.invId) {
+      const invIdx = state.inventory.findIndex(p => p.id === sale.invId);
+      if (invIdx !== -1) {
+        const newStock = Math.max(0, (state.inventory[invIdx].stock || 0) - (sale.qty || 0));
+        updateInventoryStock(sale.invId, newStock, state.inventory[invIdx]);
+      }
+    }
+    await updateRecord('sales', id, { status: 'completed' });
+  }
   clearSelection();
   showToast(`${ids.length} sale(s) marked as completed`, 'success');
 }
@@ -3330,6 +3341,14 @@ async function deleteRecord(coll, id) {
     if (invIdx !== -1) {
       const restored = (state.inventory[invIdx].stock||0) + (rec.qty||0);
       updateInventoryStock(rec.invId, restored, state.inventory[invIdx]);
+    }
+  }
+  // Deduct stock if deleting a return that was restocked — undo the restock
+  if (coll === 'returns' && rec && rec.restocked && rec.invId) {
+    const invIdx = state.inventory.findIndex(p=>p.id===rec.invId);
+    if (invIdx !== -1) {
+      const newStock = Math.max(0, (state.inventory[invIdx].stock||0) - (rec.qty||0));
+      updateInventoryStock(rec.invId, newStock, state.inventory[invIdx]);
     }
   }
   const idx = state[coll].findIndex(r=>r.id===id);
