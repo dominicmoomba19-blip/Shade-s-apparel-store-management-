@@ -821,18 +821,27 @@ tbody td { padding: 12px 16px; color: var(--text); font-size: 13.5px; }
 //  SERVICE WORKER — offline-first app shell caching
 // ═══════════════════════════════════════════════════════════
 if ('serviceWorker' in navigator) {
-  const SW_VERSION = 'shades-v3';
+  const SW_VERSION = 'shades-v4';
+  // Pass the real page URL into the SW — blob URL SWs have wrong self.location.pathname
+  const PAGE_URL = window.location.href.split('?')[0].split('#')[0];
   const swCode = `
 const CACHE = '${SW_VERSION}';
+const PAGE_URL = '` + PAGE_URL + `';
 const ASSETS = [
-  self.location.pathname,
+  PAGE_URL,
   'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Epilogue:wght@300;400;500;600;700&display=swap',
   'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js'
 ];
 
 self.addEventListener('install', e => {
   e.waitUntil(
-    caches.open(CACHE).then(c => c.addAll(ASSETS).catch(()=>{}))
+    caches.open(CACHE).then(c =>
+      Promise.all(ASSETS.map(url =>
+        fetch(url).then(res => {
+          if (res.ok) return c.put(url, res);
+        }).catch(() => {}) // don't fail install if a CDN asset misses
+      ))
+    )
   );
   self.skipWaiting();
 });
@@ -848,32 +857,50 @@ self.addEventListener('activate', e => {
 
 self.addEventListener('fetch', e => {
   const url = e.request.url;
-  // Never intercept Firestore or Google APIs — let those go through normally
+  // Never intercept Firestore, Firebase or auth APIs
   if (url.includes('firestore.googleapis.com') ||
       url.includes('firebase') ||
       url.includes('googleapis.com/identitytoolkit') ||
       url.includes('securetoken')) return;
 
-  e.respondWith(
-    caches.match(e.request).then(cached => {
-      if (cached) return cached;
-      return fetch(e.request).then(response => {
-        // Cache successful GET responses
-        if (e.request.method === 'GET' && response.status === 200) {
-          const clone = response.clone();
-          caches.open(CACHE).then(c => c.put(e.request, clone));
+  // Navigation requests (the HTML page itself) — cache-first
+  if (e.request.mode === 'navigate') {
+    e.respondWith(
+      caches.match(PAGE_URL).then(cached => {
+        if (cached) {
+          // Serve from cache immediately, refresh in background
+          fetch(e.request).then(res => {
+            if (res.ok) caches.open(CACHE).then(c => c.put(PAGE_URL, res.clone()));
+          }).catch(() => {});
+          return cached;
         }
-        return response;
-      }).catch(() => caches.match(e.request)); // fallback to cache on network fail
-    })
+        return fetch(e.request).then(res => {
+          if (res.ok) caches.open(CACHE).then(c => c.put(PAGE_URL, res.clone()));
+          return res;
+        });
+      })
+    );
+    return;
+  }
+
+  // All other GET requests — network first, fall back to cache
+  if (e.request.method !== 'GET') return;
+  e.respondWith(
+    fetch(e.request).then(response => {
+      if (response.status === 200) {
+        const clone = response.clone();
+        caches.open(CACHE).then(c => c.put(e.request, clone));
+      }
+      return response;
+    }).catch(() => caches.match(e.request))
   );
 });
-  `;
+  \`;
   const blob = new Blob([swCode], {type:'text/javascript'});
   const swUrl = URL.createObjectURL(blob);
-  var swScope = window.location.href.replace(/[^/]*$/, '') || '/';
+  var swScope = PAGE_URL.replace(/[^/]*$/, '') || '/';
   navigator.serviceWorker.register(swUrl, {scope: swScope})
-    .then(reg => { console.log('SW registered'); })
+    .then(reg => { console.log('SW registered, scope:', reg.scope); })
     .catch(e => console.warn('SW registration failed:', e));
 
   // Flush queue after app fully initialised (sqFlush defined later in script)
