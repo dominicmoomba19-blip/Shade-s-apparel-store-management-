@@ -1127,7 +1127,16 @@ self.addEventListener('fetch', e => {
             <button class="btn" style="padding:7px 14px;font-size:12px;background:rgba(245,54,92,0.12);color:var(--red);border:1px solid rgba(245,54,92,0.3)" onclick="bulkDelete()">&#128465; Delete</button>
             <button class="btn" style="padding:7px 14px;font-size:12px;background:var(--card2);color:var(--muted);border:1px solid var(--border);margin-left:auto" onclick="clearSelection()">&#10005; Deselect All</button>
           </div>
-          <div style="overflow-x:auto"><table><thead><tr><th style="width:36px"><input type="checkbox" id="select-all-sales" onchange="toggleSelectAll(this)" style="accent-color:var(--accent);width:15px;height:15px;cursor:pointer"></th><th>Product</th><th>Qty</th><th>Price (K)</th><th>Amount (K)</th><th>Date</th><th>Status</th><th></th></tr></thead><tbody id="sales-tbody"></tbody></table></div>
+          <div style="overflow-x:auto"><table><thead><tr>
+  <th style="width:36px"><input type="checkbox" id="select-all-sales" onchange="toggleSelectAll(this)" style="accent-color:var(--accent);width:15px;height:15px;cursor:pointer"></th>
+  <th id="sh-product" onclick="setSalesSort('product')" style="cursor:pointer;user-select:none;white-space:nowrap">Product <span id="si-product"></span></th>
+  <th>Qty</th>
+  <th id="sh-price" onclick="setSalesSort('price')" style="cursor:pointer;user-select:none;white-space:nowrap">Price (K) <span id="si-price"></span></th>
+  <th id="sh-amount" onclick="setSalesSort('amount')" style="cursor:pointer;user-select:none;white-space:nowrap">Amount (K) <span id="si-amount"></span></th>
+  <th id="sh-date" onclick="setSalesSort('date')" style="cursor:pointer;user-select:none;white-space:nowrap">Date <span id="si-date">↓</span></th>
+  <th>Status</th>
+  <th></th>
+</tr></thead><tbody id="sales-tbody"></tbody></table></div>
         </div>
       </div>
 
@@ -1246,7 +1255,7 @@ const state = {
   reportsUnlocked: false,
   dashPeriod: '7d',
   invFilter: 'all',
-  salesPage: 0,
+  salesPage: 0, salesSort: 'date', salesDir: 'desc',
   expPage: 0,
   retPage: 0,
   dismissedNotifs: new Set(),
@@ -1762,8 +1771,36 @@ function renderDashboard() {
 //  SALES RENDER
 // ═══════════════════════════════════════════════════════════
 const PAGE_SIZE = 50;
+function setSalesSort(field) {
+  if (state.salesSort === field) {
+    state.salesDir = state.salesDir === 'asc' ? 'desc' : 'asc';
+  } else {
+    state.salesSort = field;
+    state.salesDir = field === 'date' ? 'desc' : 'asc';
+  }
+  state.salesPage = 0;
+  renderSales();
+}
+
 function renderSales() {
   const filtered = applyFilters(state.sales,['product','status']);
+  // Apply sort
+  const sf = state.salesSort || 'date';
+  const sd = state.salesDir || 'desc';
+  filtered.sort((a, b) => {
+    let av = a[sf] ?? '', bv = b[sf] ?? '';
+    if (sf === 'date') { av = av || ''; bv = bv || ''; }
+    else if (sf === 'amount' || sf === 'price') { av = parseFloat(av)||0; bv = parseFloat(bv)||0; }
+    else { av = String(av).toLowerCase(); bv = String(bv).toLowerCase(); }
+    if (av < bv) return sd === 'asc' ? -1 : 1;
+    if (av > bv) return sd === 'asc' ? 1 : -1;
+    return 0;
+  });
+  // Update sort indicators
+  ['product','price','amount','date'].forEach(f => {
+    const el = document.getElementById('si-' + f);
+    if (el) el.textContent = f === sf ? (sd === 'asc' ? '↑' : '↓') : '';
+  });
   const total = filtered.reduce((s,e)=>s+(e.amount||0),0);
   const comp = filtered.filter(s=>s.status==='completed').length;
   const pend = filtered.filter(s=>s.status==='pending').length;
@@ -1794,7 +1831,7 @@ function renderSales() {
         <button class="action-btn del"  onclick="deleteRecord('sales','${s.id}')">🗑️</button>
       </div></td>
     </tr>
-  `).join(''):`<tr class="empty-row"><td colspan="9">No sales records found</td></tr>`;
+  `).join(''):`<tr class="empty-row"><td colspan="8">No sales records found</td></tr>`;
 
   // Pagination controls
   let paginationHtml = '';
@@ -3241,8 +3278,10 @@ async function deleteRecord(coll, id) {
   if (coll === 'sales' && rec && rec.status === 'completed' && rec.invId) {
     const invIdx = state.inventory.findIndex(p=>p.id===rec.invId);
     if (invIdx !== -1) {
-      const restored = (state.inventory[invIdx].stock||0) + (rec.qty||0);
-      updateInventoryStock(rec.invId, restored, state.inventory[invIdx]);
+      const item = state.inventory[invIdx];
+      const baseStock = item.baseStock ?? item.stock;
+      const restored = Math.min((item.stock||0) + (rec.qty||0), baseStock);
+      updateInventoryStock(rec.invId, restored, item);
     }
   }
   // Deduct stock if deleting a return that was restocked — undo the restock
@@ -3371,8 +3410,10 @@ function updateSale(id) {
         // pending → completed: deduct new qty
         updateInventoryStock(old.invId, Math.max(0, curStock - qty), state.inventory[invIdx]);
       } else if (old.status === 'completed' && status !== 'completed') {
-        // completed → pending: restore old qty
-        updateInventoryStock(old.invId, curStock + (old.qty||0), state.inventory[invIdx]);
+        // completed → pending: restore old qty (cap at baseStock)
+        const baseStock = state.inventory[invIdx].baseStock ?? state.inventory[invIdx].stock;
+        const restored = Math.min(curStock + (old.qty||0), baseStock);
+        updateInventoryStock(old.invId, restored, state.inventory[invIdx]);
       } else if (old.status === 'completed' && status === 'completed' && old.qty !== qty) {
         // Same status completed, but quantity changed: adjust the difference
         const diff = qty - (old.qty||0);
